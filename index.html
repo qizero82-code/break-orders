@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
 <meta name="description" content="Sistema di gestione ordini per Break Billiard Club" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -12,13 +12,16 @@
 <title>Break Orders — Completo</title>
 <style>
   :root{--tempo-color:#008800}
+  html{height:100%;overflow:hidden}
   body{
     font-family:Arial,Helvetica,sans-serif;
     margin:20px;padding-bottom:140px;
     background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
-    background-size:cover;color:#fff;box-sizing:border-box
+    background-size:cover;color:#fff;box-sizing:border-box;
+    touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    position:fixed;width:100%;height:100%;overflow-y:auto;top:0;left:0
   }
-  button{padding:12px;font-size:16px;cursor:pointer;border-radius:8px;border:1px solid #444;background:#000;color:#fff}
+  button{padding:12px;font-size:16px;cursor:pointer;border-radius:8px;border:1px solid #444;background:#000;color:#fff;touch-action:manipulation}
   
   /* Layout ordini salvati */
   #saved-orders{
@@ -1477,6 +1480,11 @@ function deleteProduct(catKey, idx){
 
 /* Subcategory Settings */
 function openSubcategorySettings(){
+  currentTarget = {type:null, id:null};
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
   
   const title = document.createElement('div');
@@ -2012,6 +2020,29 @@ function blobToBase64(blob, callback) {
   };
   reader.readAsDataURL(blob);
 }
+
+/* Nascondi barra indirizzi e disabilita zoom */
+window.addEventListener('load', () => {
+  // Nascondi barra indirizzi con scroll
+  setTimeout(() => {
+    window.scrollTo(0, 1);
+  }, 0);
+  
+  // Previeni zoom con gesture
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('gesturechange', (e) => e.preventDefault());
+  document.addEventListener('gestureend', (e) => e.preventDefault());
+  
+  // Previeni zoom con doppio tap
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+});
 
 /* Register Service Worker */
 if ('serviceWorker' in navigator) {
