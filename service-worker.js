@@ -1,4 +1,4 @@
-const CACHE_NAME = 'break-orders-v1';
+const CACHE_NAME = 'break-orders-v2';
 const urlsToCache = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const urlsToCache = [
 
 // Install service worker
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
@@ -23,6 +24,7 @@ self.addEventListener('fetch', event => {
 
 // Update service worker
 self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
