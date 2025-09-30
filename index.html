@@ -2,9 +2,12 @@
 <html lang="it">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <meta name="theme-color" content="#000000" />
 <meta name="description" content="Sistema di gestione ordini per Break Billiard Club" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="manifest" href="manifest.json" />
 <title>Break Orders — Completo</title>
 <style>
@@ -67,11 +70,11 @@ background-size:cover;padding:18px;border-radius:10px;width:520px;max-height:92v
   .btn-cancel{background:#aa0000;color:#fff}
   @media(max-width:640px){
     .popup-content{width:96vw;padding:12px}
-    .table-btn{padding:18px;font-size:20px}
-    .numpad button{font-size:16px;padding:12px}
+    .table-btn{padding:12px;font-size:16px}
+    .numpad button{font-size:14px;padding:10px}
     .confirm-box{min-width:280px;padding:20px}
-    #saved-orders{max-width:100%}
-    .tables-grid{grid-template-columns:repeat(2,1fr)}
+    #saved-orders{max-width:60%}
+    .tables-grid{grid-template-columns:repeat(4,1fr)}
   }
 </style>
 </head>
@@ -174,6 +177,13 @@ let storico = [];
 let evasiOrders = []; // ordini pagati che possono essere ripristinati
 let currentBackground = "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4";
 let modifiersList = ["SR", "M", "K", "S", "GH"];
+let subcategories = {
+  "CAFFÈ CORRETTO": [{name:"GRAPPA",price:1.50},{name:"SAMBUCA",price:1.50},{name:"BAILEYS",price:1.50},{name:"PRUGNA",price:1.50}],
+  "SPRITZ": [{name:"LISCIO",price:2.50},{name:"APEROL",price:3.00},{name:"CAMPARI",price:3.00},{name:"CYNAR",price:3.00}],
+  "AMARO": [{name:"MONTENEGRO",price:3.00},{name:"JAGERMEISTER",price:3.00},{name:"CAPO",price:3.00},{name:"BRAULIO",price:3.00},{name:"BRANCAMENTA",price:3.00},{name:"PETRUS",price:3.00}],
+  "GRAPPA": [{name:"BIANCA",price:3.00},{name:"24k",price:3.00},{name:"MIELE",price:3.00},{name:"CAMOMILLA",price:3.00},{name:"PRUGNA",price:3.00},{name:"MIRTILLO",price:3.00}],
+  "COCKTAILS": [{name:"GIN TONIC",price:6.00},{name:"GIN TONIC H",price:8.00},{name:"GIN LEMON",price:6.00},{name:"GIN LEMON H",price:8.00},{name:"JACK COLA",price:8.00},{name:"RUM COLA",price:6.60},{name:"JAGERBOMB",price:8.00},{name:"VODKA TONIC",price:6.00},{name:"VODKA LEMON",price:6.00},{name:"AMERICANO",price:4.00}]
+};
 
 const tablesContainer = document.getElementById('tables-container');
 const savedOrdersDiv = document.getElementById('saved-orders');
@@ -193,7 +203,7 @@ let confirmCallback = null;
 function saveData(){
   try{
     localStorage.setItem('breakOrdersState', JSON.stringify({
-      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, currentBackground, modifiersList
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, currentBackground, modifiersList, subcategories
     }));
   }catch(e){ console.error(e) }
 }
@@ -218,6 +228,7 @@ function loadData(){
     evasiOrders = parsed.evasiOrders || [];
     currentBackground = parsed.currentBackground || currentBackground;
     modifiersList = parsed.modifiersList || modifiersList;
+    subcategories = parsed.subcategories || subcategories;
     if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
     applyBackground();
     renderModifiers();
@@ -749,11 +760,10 @@ function showSubcatsByKey(key){
   });
 
   Array.from(subcatsDiv.children).forEach(ch=>{
-    if(ch.textContent === "CAFFÈ CORRETTO") ch.onclick = ()=> showOptionsAndAdd("CAFFÈ CORRETTO", [{name:"GRAPPA",price:1.50},{name:"SAMBUCA",price:1.50},{name:"BAILEYS",price:1.50},{name:"PRUGNA",price:1.50}], key);
-    if(ch.textContent === "SPRITZ") ch.onclick = ()=> showOptionsAndAdd("SPRITZ", [{name:"LISCIO",price:2.50},{name:"APEROL",price:3.00},{name:"CAMPARI",price:3.00},{name:"CYNAR",price:3.00}], key);
-    if(ch.textContent === "AMARO") ch.onclick = ()=> showOptionsAndAdd("AMARO", [{name:"MONTENEGRO",price:3.00},{name:"JAGERMEISTER",price:3.00},{name:"CAPO",price:3.00},{name:"BRAULIO",price:3.00},{name:"BRANCAMENTA",price:3.00},{name:"PETRUS",price:3.00}], key);
-    if(ch.textContent === "GRAPPA") ch.onclick = ()=> showOptionsAndAdd("GRAPPA", [{name:"BIANCA",price:3.00},{name:"24k",price:3.00},{name:"MIELE",price:3.00},{name:"CAMOMILLA",price:3.00},{name:"PRUGNA",price:3.00},{name:"MIRTILLO",price:3.00}], key);
-    if(ch.textContent === "COCKTAILS") ch.onclick = ()=> showOptionsAndAdd("COCKTAILS", [{name:"GIN TONIC",price:6.00},{name:"GIN TONIC H",price:8.00},{name:"GIN LEMON",price:6.00},{name:"GIN LEMON H",price:8.00},{name:"JACK COLA",price:8.00},{name:"RUM COLA",price:6.60},{name:"JAGERBOMB",price:8.00},{name:"VODKA TONIC",price:6.00},{name:"VODKA LEMON",price:6.00},{name:"AMERICANO",price:4.00}], key);
+    const prodName = ch.textContent;
+    if(subcategories[prodName]){
+      ch.onclick = ()=> showOptionsAndAdd(prodName, subcategories[prodName], key);
+    }
   });
 
   subcatsDiv.classList.remove('hidden');
@@ -1172,7 +1182,8 @@ function exportEvasiToCSV(){
       }, 0);
     }, 0);
     
-    csv += `\n"TOTALE COMPLESSIVO";"";"";"";"";${totalComplessivo.toFixed(2).replace('.', ',')}\n`;
+    csv += `\n"TOTALE COMPLESSIVO";"";"";"";"";
+${totalComplessivo.toFixed(2).replace('.', ',')}\n`;
     
     // Prova invio a Kodular / AppInventor
     if (window.AppInventor && typeof AppInventor.setWebViewString === 'function') {
@@ -1183,15 +1194,9 @@ function exportEvasiToCSV(){
       return;
     }
     
-    // Fallback browser: scarica file
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
-    link.download = `evasi_${timestamp}.csv`;
-    link.href = URL.createObjectURL(blob);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Invia via email
+    sendCSVByEmail(csv, 'Ordini Evasi Break BC', 'evasi');
+    
   } catch(e) {
     console.error("Errore exportEvasiToCSV:", e);
   }
@@ -1229,6 +1234,7 @@ function openSettings(){
   const menuOptions = [
     {name: "🎨 Cambia Sfondo", action: openBackgroundSettings},
     {name: "📁 Gestisci Categorie", action: openCategorySettings},
+    {name: "📂 Gestisci Sottocategorie", action: openSubcategorySettings},
     {name: "🏷️ Gestisci Modificatori", action: openModifierSettings}
   ];
 
@@ -1469,6 +1475,184 @@ function deleteProduct(catKey, idx){
   }
 }
 
+/* Subcategory Settings */
+function openSubcategorySettings(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Gestisci Sottocategorie";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const subtitle = document.createElement('div');
+  subtitle.textContent = "Le sottocategorie sono prodotti che hanno opzioni aggiuntive";
+  subtitle.style.fontSize = "14px";
+  subtitle.style.marginBottom = "15px";
+  subtitle.style.color = "#aaa";
+  orderList.appendChild(subtitle);
+
+  Object.keys(subcategories).forEach(subKey => {
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "12px";
+    box.style.marginBottom = "10px";
+    box.style.background = "#222";
+    
+    const header = document.createElement('div');
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.marginBottom = "10px";
+    
+    const subName = document.createElement('div');
+    subName.textContent = subKey;
+    subName.style.fontSize = "16px";
+    subName.style.fontWeight = "700";
+    
+    const headerActions = document.createElement('div');
+    headerActions.style.display = "flex";
+    headerActions.style.gap = "8px";
+    
+    const addOptBtn = document.createElement('button');
+    addOptBtn.textContent = "+ Opzione";
+    addOptBtn.style.padding = "6px 10px";
+    addOptBtn.style.fontSize = "12px";
+    addOptBtn.style.background = "#00aa00";
+    addOptBtn.onclick = ()=> addSubcategoryOption(subKey);
+    
+    const delSubBtn = document.createElement('button');
+    delSubBtn.textContent = "Elimina";
+    delSubBtn.style.padding = "6px 10px";
+    delSubBtn.style.fontSize = "12px";
+    delSubBtn.style.background = "#aa0000";
+    delSubBtn.onclick = ()=> deleteSubcategory(subKey);
+    
+    headerActions.appendChild(addOptBtn);
+    headerActions.appendChild(delSubBtn);
+    header.appendChild(subName);
+    header.appendChild(headerActions);
+    box.appendChild(header);
+    
+    const options = subcategories[subKey] || [];
+    options.forEach((opt, idx) => {
+      const optRow = document.createElement('div');
+      optRow.style.display = "flex";
+      optRow.style.justifyContent = "space-between";
+      optRow.style.alignItems = "center";
+      optRow.style.padding = "8px";
+      optRow.style.borderTop = "1px solid #444";
+      
+      const optInfo = document.createElement('div');
+      optInfo.textContent = `${opt.name} - €${opt.price.toFixed(2)}`;
+      optInfo.style.fontSize = "14px";
+      
+      const actions = document.createElement('div');
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+      
+      const editBtn = document.createElement('button');
+      editBtn.textContent = "Modifica";
+      editBtn.style.padding = "6px 10px";
+      editBtn.style.fontSize = "12px";
+      editBtn.onclick = ()=> editSubcategoryOption(subKey, idx);
+      
+      const delBtn = document.createElement('button');
+      delBtn.textContent = "Elimina";
+      delBtn.style.padding = "6px 10px";
+      delBtn.style.fontSize = "12px";
+      delBtn.style.background = "#aa0000";
+      delBtn.onclick = ()=> deleteSubcategoryOption(subKey, idx);
+      
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      optRow.appendChild(optInfo);
+      optRow.appendChild(actions);
+      box.appendChild(optRow);
+    });
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  
+  const addSubBtn = document.createElement('button');
+  addSubBtn.textContent = "+ Nuova Sottocategoria";
+  addSubBtn.style.background = "#00aa00";
+  addSubBtn.onclick = addNewSubcategory;
+  actionsDiv.appendChild(addSubBtn);
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "← Indietro";
+  backBtn.onclick = openSettings;
+  actionsDiv.appendChild(backBtn);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn);
+
+  popupTitle.textContent = "Sottocategorie";
+  popup.style.display = 'flex';
+}
+
+function addNewSubcategory(){
+  const name = prompt("Nome della sottocategoria (es: CAFFÈ CORRETTO):");
+  if(!name) return;
+  if(subcategories[name]){
+    alert("Questa sottocategoria esiste già!");
+    return;
+  }
+  subcategories[name] = [];
+  saveData();
+  openSubcategorySettings();
+}
+
+function deleteSubcategory(subKey){
+  if(confirm(`Eliminare la sottocategoria "${subKey}" e tutte le sue opzioni?`)){
+    delete subcategories[subKey];
+    saveData();
+    openSubcategorySettings();
+  }
+}
+
+function addSubcategoryOption(subKey){
+  const name = prompt("Nome opzione:");
+  if(!name) return;
+  const priceStr = prompt("Prezzo (es: 3.00):");
+  if(!priceStr) return;
+  const price = parseFloat(priceStr);
+  if(isNaN(price)) return;
+  
+  subcategories[subKey].push({name, price});
+  saveData();
+  openSubcategorySettings();
+}
+
+function editSubcategoryOption(subKey, idx){
+  const opt = subcategories[subKey][idx];
+  const name = prompt("Nome opzione:", opt.name);
+  if(!name) return;
+  const priceStr = prompt("Prezzo (es: 3.00):", opt.price);
+  if(!priceStr) return;
+  const price = parseFloat(priceStr);
+  if(isNaN(price)) return;
+  
+  subcategories[subKey][idx] = {name, price};
+  saveData();
+  openSubcategorySettings();
+}
+
+function deleteSubcategoryOption(subKey, idx){
+  if(confirm(`Eliminare l'opzione "${subcategories[subKey][idx].name}"?`)){
+    subcategories[subKey].splice(idx, 1);
+    saveData();
+    openSubcategorySettings();
+  }
+}
+
 /* Render Modifiers */
 function renderModifiers(){
   modifiersDiv.innerHTML = "";
@@ -1667,14 +1851,8 @@ function exportSingleHistoric(entry){
   }
   rows.push(["TOTALE", ((entry.totale!==undefined)?entry.totale:Object.values(entry.totali||{}).reduce((a,b)=>a+b,0)).toFixed(2).replace('.', ',')]);
   const csv = rows.map(r=>r.join(";")).join("\n");
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
-  const fname = `storico_${(entry.dateISO||new Date().toISOString()).replace(/[:.]/g,'-')}.csv`;
-  link.href = URL.createObjectURL(blob);
-  link.download = fname;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const dateLabel = entry.dateLabel || entry.dateISO || new Date().toLocaleString();
+  sendCSVByEmail(csv, `Storico Break BC - ${dateLabel}`, 'storico');
 }
 
 /* helper detect category */
@@ -1741,19 +1919,98 @@ function exportTotalsToCSV() {
       return;
     }
 
-    // 3️⃣ Fallback browser: scarica file
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
-    link.download = `totali_${timestamp}.csv`;
-    link.href = URL.createObjectURL(blob);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // 3️⃣ Invia via email
+    sendCSVByEmail(csv, 'Totali Break BC', 'totali');
 
   } catch(e) {
     console.error("Errore exportTotalsToCSV:", e);
   }
+}
+
+/* Funzione per inviare CSV via email */
+function sendCSVByEmail(csvContent, subject, tipo) {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
+    const filename = `${tipo}_${timestamp}.csv`;
+    
+    // Crea il blob CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Controlla se siamo in un'app Android con interfaccia nativa
+    if (window.Android && typeof window.Android.sendEmailWithAttachment === 'function') {
+      // Usa l'interfaccia Android nativa per inviare email con allegato
+      const base64 = blobToBase64(blob, (base64Data) => {
+        window.Android.sendEmailWithAttachment(
+          'regbreakbc@gmail.com',
+          subject + ' - ' + timestamp,
+          'In allegato i dati esportati da Break Orders.',
+          base64Data,
+          filename
+        );
+      });
+      return;
+    }
+    
+    // Controlla se il browser supporta Web Share API con file
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], filename, { type: 'text/csv' });
+      const shareData = {
+        files: [file],
+        title: subject,
+        text: 'Dati esportati da Break Orders'
+      };
+      
+      if (navigator.canShare(shareData)) {
+        navigator.share(shareData)
+          .then(() => console.log('File condiviso con successo'))
+          .catch(err => {
+            console.error('Errore condivisione:', err);
+            fallbackDownload(blob, filename);
+          });
+        return;
+      }
+    }
+    
+    // Fallback: scarica il file e apri email
+    fallbackDownload(blob, filename);
+    
+    // Apri client email con istruzioni
+    setTimeout(() => {
+      const emailTo = 'regbreakbc@gmail.com';
+      const emailSubject = encodeURIComponent(subject + ' - ' + timestamp);
+      const emailBody = encodeURIComponent(
+        'File CSV scaricato: ' + filename + '\n\n' +
+        'Allega manualmente il file scaricato a questa email.\n\n' +
+        '---\nBreak Orders'
+      );
+      window.location.href = `mailto:${emailTo}?subject=${emailSubject}&body=${emailBody}`;
+    }, 1000);
+    
+  } catch(e) {
+    console.error('Errore invio email:', e);
+    alert('Errore nell\'invio. Il file è stato scaricato.');
+  }
+}
+
+// Funzione helper per scaricare il file
+function fallbackDownload(blob, filename) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  alert('File CSV scaricato: ' + filename + '\nAllega il file all\'email che si aprirà.');
+}
+
+// Funzione helper per convertire blob in base64
+function blobToBase64(blob, callback) {
+  const reader = new FileReader();
+  reader.onloadend = function() {
+    const base64 = reader.result.split(',')[1];
+    callback(base64);
+  };
+  reader.readAsDataURL(blob);
 }
 
 /* Register Service Worker */
