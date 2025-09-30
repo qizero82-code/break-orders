@@ -1,0 +1,24 @@
+{
+  "name": "Break Orders",
+  "short_name": "Break Orders",
+  "description": "Sistema di gestione ordini per Break Billiard Club",
+  "start_url": "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000195-0b9080b90b/index.html?ph=03d98711d4",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000201-691ab691ad/icon-192-4.png?ph=03d98711d4",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000203-a00a4a00a5/icon-512-1.png?ph=03d98711d4",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

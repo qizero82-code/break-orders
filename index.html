@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#000000" />
+<meta name="description" content="Sistema di gestione ordini per Break Billiard Club" />
+<link rel="manifest" href="https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000194-38f9e38f9f/manifest.json?ph=03d98711d4" />
+<title>Break Orders — Completo</title>
+<style>
+  :root{--tempo-color:#008800}
+  body{
+    font-family:Arial,Helvetica,sans-serif;
+    margin:20px;padding-bottom:140px;
+    background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
+    background-size:cover;color:#fff;box-sizing:border-box
+  }
+  button{padding:12px;font-size:16px;cursor:pointer;border-radius:8px;border:1px solid #444;background:#000;color:#fff}
+  
+  /* Layout ordini salvati */
+  #saved-orders{
+    position:fixed;
+    top:10px;
+    left:10px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    max-width:60%;
+    z-index:999;
+  }
+  
+  .tables-wrapper{position:fixed;bottom:10px;left:0;right:0;padding:10px;z-index:1000;background:rgba(0,0,0,0.06);box-sizing:border-box}
+  .tables-container{display:flex;flex-direction:column;gap:10px}
+  .utility-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:5px}
+  .tables-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .table-btn{background:#000;color:#fff;border-radius:10px;padding:21px;font-size:24px;font-weight:700}
+  .utility-btn{background:#000;color:#fff}
+  .popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);align-items:flex-start;justify-content:center;overflow-y:auto;z-index:4000}
+  .popup-content{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
+background-size:cover;padding:18px;border-radius:10px;width:520px;max-height:92vh;margin:28px auto;box-sizing:border-box;color:#fff;border:2px solid #000;overflow-y:auto}
+  .hidden{display:none}
+  /* sempre 3 colonne */
+  #categories,#subcats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .cat-btn,.subcat-btn{color:#fff;border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;width:100%;text-align:center;background:#000}
+  .back-btn{background:#555;color:#fff;border:none;border-radius:6px;padding:10px;margin:4px 0;font-size:14px;grid-column:span 3;cursor:pointer}
+  .cat-caffe{background:#888}.cat-spina{background:#ff8800}.cat-frigo{background:#0099ff}.cat-super{background:#aaaa00}.cat-snack{background:#ff0000}.cat-tempo{background:var(--tempo-color)}.cat-quote{background:#0000ff}
+  .modifiers{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+  .modifiers button{background:#444;color:#fff;font-weight:700;padding:10px 14px;border:none;border-radius:6px;cursor:pointer}
+  .list div{padding:6px;border-bottom:1px solid #666;cursor:pointer}
+  #order-list{background:#222;color:#fff;padding:10px;border-radius:8px;min-height:100px;max-height:40vh;overflow:auto;-webkit-overflow-scrolling:touch}
+  .actions{margin:10px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .numpad button{font-size:18px;padding:14px;border-radius:8px;background:var(--tempo-color);color:#fff;border:none;width:100%;box-sizing:border-box;font-weight:700}
+  .tempo-display{width:100%;padding:10px;font-size:18px;text-align:right;margin-bottom:8px;background:#111;border:1px solid #333;color:#fff;border-radius:6px}
+  .order-row{display:grid;grid-template-columns:3fr 1fr;align-items:center;padding:4px 0;border-bottom:1px solid #333}
+  .order-name{text-align:left}
+  .order-price{text-align:right;font-weight:bold}
+  /* Popup conferma personalizzato */
+  #confirm-popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:5000}
+  #confirm-popup.show{display:flex}
+  .confirm-box{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center;background-size:cover;padding:24px;border-radius:10px;border:2px solid #444;color:#fff;text-align:center;min-width:300px;max-width:400px}
+  .confirm-box h3{margin:0 0 16px 0;font-size:20px}
+  .confirm-box p{margin:0 0 20px 0;font-size:16px}
+  .confirm-buttons{display:flex;gap:10px;justify-content:center}
+  .confirm-buttons button{padding:12px 24px;font-size:16px;border-radius:8px;cursor:pointer;border:none;font-weight:700}
+  .btn-confirm{background:#00aa00;color:#fff}
+  .btn-cancel{background:#aa0000;color:#fff}
+  @media(max-width:640px){
+    .popup-content{width:96vw;padding:12px}
+    .table-btn{padding:18px;font-size:20px}
+    .numpad button{font-size:16px;padding:12px}
+    .confirm-box{min-width:280px;padding:20px}
+    #saved-orders{max-width:100%}
+    .tables-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+  <!-- Ordini salvati in alto a sinistra -->
+  <div id="saved-orders"></div>
+  
+  <!-- Barra tavoli con Totali e Storico integrati -->
+  <div class="tables-wrapper">
+    <div class="tables-container" id="tables-container"></div>
+  </div>
+
+  <!-- Popup conferma personalizzato -->
+  <div id="confirm-popup">
+    <div class="confirm-box">
+      <h3 id="confirm-title">Conferma</h3>
+      <p id="confirm-message">Sei sicuro?</p>
+      <div class="confirm-buttons">
+        <button class="btn-confirm" id="confirm-ok">OK</button>
+        <button class="btn-cancel" id="confirm-cancel">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup" id="popup" aria-modal="true" role="dialog">
+    <div class="popup-content">
+      <h3 id="popup-title">Tavolo</h3>
+
+      <div id="categories">
+        <button class="cat-btn cat-caffe" data-cat="c1">CAFFE</button>
+        <button class="cat-btn cat-spina" data-cat="c2">SPINA</button>
+        <button class="cat-btn cat-frigo" data-cat="c3">FRIGO</button>
+        <button class="cat-btn cat-super" data-cat="c4">SUPER</button>
+        <button class="cat-btn cat-snack" data-cat="c5">SNACK</button>
+        <button class="cat-btn cat-tempo" data-cat="c6">TEMPO</button>
+        <button class="cat-btn cat-quote" data-cat="c7">QUOTE</button>
+      </div>
+
+      <div id="subcats" class="hidden" aria-live="polite"></div>
+
+      <div id="tempo-pad" class="hidden" aria-hidden="true">
+        <input id="tempo-display" class="tempo-display" readonly value="0" />
+        <div class="numpad" id="tempo-numpad">
+          <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+          <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+          <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+          <button data-key=".">.</button><button data-key="0">0</button><button id="tempo-ok">OK</button>
+        </div>
+      </div>
+
+      <div class="modifiers" id="modifiers">
+        <button data-mod="SR">SR</button><button data-mod="M">M</button><button data-mod="K">K</button>
+        <button data-mod="S">S</button><button data-mod="GH">GH</button>
+      </div>
+
+      <h4>Ordine</h4>
+      <div class="actions" id="actions"></div>
+      <div id="order-list" class="list" aria-live="polite"></div>
+    </div>
+  </div>
+
+<script>
+/* Popup conferma personalizzato */
+function showConfirm(message, onConfirm, title = "Conferma"){
+  const confirmPopup = document.getElementById('confirm-popup');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmOk = document.getElementById('confirm-ok');
+  const confirmCancel = document.getElementById('confirm-cancel');
+  
+  confirmTitle.textContent = title;
+  confirmMessage.textContent = message;
+  confirmCallback = onConfirm;
+  confirmPopup.classList.add('show');
+}
+
+function hideConfirm(){
+  const confirmPopup = document.getElementById('confirm-popup');
+  confirmPopup.classList.remove('show');
+  confirmCallback = null;
+}
+
+document.getElementById('confirm-ok').addEventListener('click', ()=>{
+  if(confirmCallback) confirmCallback();
+  hideConfirm();
+});
+
+document.getElementById('confirm-cancel').addEventListener('click', ()=>{
+  hideConfirm();
+});
+
+/* stato */
+const tableNames = ["TAV-1","TAV-2","TAV-3","TAV-4","TAV-5","TAV-6","TAV-7","TAV-8","TAV-9","TAV-10","TAV-11","TAV-12","BANCO","SALA","SALAF"];
+let tableOrders = {}; // {index: [{name,qty,price,cat}, ...], ...}
+let savedOrders = []; // {id, tableName, items: [...]}
+let totals = {caffe:0,spina:0,frigo:0,super:0,snack:0,tempo:0,quote:0};
+let currentTarget = {type:null, id:null};
+let accontoMode = false;
+let storico = [];
+let evasiOrders = []; // ordini pagati che possono essere ripristinati
+let currentBackground = "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4";
+let modifiersList = ["SR", "M", "K", "S", "GH"];
+
+const tablesContainer = document.getElementById('tables-container');
+const savedOrdersDiv = document.getElementById('saved-orders');
+const popup = document.getElementById('popup');
+const popupTitle = document.getElementById('popup-title');
+const categoriesDiv = document.getElementById('categories');
+const subcatsDiv = document.getElementById('subcats');
+const tempoPad = document.getElementById('tempo-pad');
+const tempoDisplay = document.getElementById('tempo-display');
+const modifiersDiv = document.getElementById('modifiers');
+const actionsDiv = document.getElementById('actions');
+const orderList = document.getElementById('order-list');
+
+let tempoValue = "";
+let confirmCallback = null;
+
+function saveData(){
+  try{
+    localStorage.setItem('breakOrdersState', JSON.stringify({
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, currentBackground, modifiersList
+    }));
+  }catch(e){ console.error(e) }
+}
+function loadData(){
+  try{
+    const raw = localStorage.getItem('breakOrdersState');
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    tableOrders = parsed.tableOrders || {};
+    // normalize savedOrders to {id,tableName,items}
+    if(Array.isArray(parsed.savedOrders)){
+      savedOrders = parsed.savedOrders.map(s=>{
+        if(!s) return null;
+        const id = s.id || s.name || (Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+        const tableName = s.tableName || s.name || s.table || "Riepilogo";
+        const items = s.items || s.itemsList || [];
+        return { id, tableName, items };
+      }).filter(Boolean);
+    } else savedOrders = [];
+    totals = parsed.totals || totals;
+    storico = parsed.storico || parsed.storicoList || [];
+    evasiOrders = parsed.evasiOrders || [];
+    currentBackground = parsed.currentBackground || currentBackground;
+    modifiersList = parsed.modifiersList || modifiersList;
+    if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
+    applyBackground();
+    renderModifiers();
+  }catch(e){ console.error(e) }
+}
+
+/* catalogo */
+const CATALOG = {
+  c1: [ {name:"CAFFÈ LISCIO", price:1.00}, {name:"CAFFÈ DECA", price:1.00}, {name:"CAFFÈ CORRETTO", price:1.50} ],
+  c2: [ {name:"PYRASER 0,3", price:3.50}, {name:"ARIA 0,3", price:3.50}, {name:"GUINNESS 0,25", price:3.50}, {name:"PYRASER 0,5", price:5.50}, {name:"ARIA 0,5", price:5.50}, {name:"GUINNESS 0,5", price:5.50}, {name:"SPRITZ", price:2.50} ],
+  c3: [ {name:"ACQUA NATURALE", price:1.00}, {name:"ACQUA FRIZZANTE", price:1.00}, {name:"COCA COLA", price:2.50}, {name:"COCA ZERO", price:2.50}, {name:"TÈ LIMONE", price:2.50}, {name:"TÈ PESCA", price:2.50}, {name:"FANTA", price:2.50}, {name:"LEMON SODA", price:2.50}, {name:"RED BULL", price:2.50} ],
+  c4: [ {name:"AMARO", price:3.00}, {name:"GRAPPA", price:3.00}, {name:"COCKTAILS", price:6.00}, {name:"BAILEYS", price:3.00}, {name:"JACK DANIELS", price:5.00}, {name:"TALISKER", price:5.00}, {name:"LIQUIRIZIA", price:3.00}, {name:"PRUGNA CM", price:3.00} ],
+  c5: [ {name:"TOAST", price:6.50}, {name:"PIZZETTA", price:3.00}, {name:"HOT DOG", price:4.00} ],
+  c6: null,
+  c7: [ {name:"QUOTA SINGOLA", price:5.00} ]
+};
+
+/* render tavoli e saved */
+function renderTables(){
+  const container = document.getElementById('tables-container');
+  container.innerHTML = "";
+  
+  // Riga 1: Totali e Storico
+  const utilityRow = document.createElement('div');
+  utilityRow.className = "utility-row";
+  
+  const totBtn = document.createElement('button');
+  totBtn.className = "table-btn utility-btn";
+  totBtn.textContent = "Totali";
+  totBtn.onclick = openTotals;
+  utilityRow.appendChild(totBtn);
+
+  const storBtn = document.createElement('button');
+  storBtn.className = "table-btn utility-btn";
+  storBtn.textContent = "Storico";
+  storBtn.onclick = openStorico;
+  utilityRow.appendChild(storBtn);
+  
+  const evasiBtn = document.createElement('button');
+  evasiBtn.className = "table-btn utility-btn";
+  evasiBtn.textContent = "Evasi";
+  evasiBtn.onclick = openEvasi;
+  utilityRow.appendChild(evasiBtn);
+  
+  const settingsBtn = document.createElement('button');
+  settingsBtn.className = "table-btn utility-btn";
+  settingsBtn.textContent = "Settings";
+  settingsBtn.onclick = openSettings;
+  utilityRow.appendChild(settingsBtn);
+  
+  container.appendChild(utilityRow);
+  
+  // Riga 2: TAV-1, TAV-2, TAV-3, TAV-4
+  const row1 = document.createElement('div');
+  row1.className = "tables-grid";
+  for(let i=1; i<=4; i++){
+    const idx = tableNames.indexOf(`TAV-${i}`);
+    if(idx !== -1){
+      const b = document.createElement('button');
+      b.className = "table-btn";
+      b.textContent = `TAV-${i}`;
+      b.onclick = ()=> openForTable(idx);
+      row1.appendChild(b);
+    }
+  }
+  container.appendChild(row1);
+  
+  // Riga 3: TAV-5, TAV-6, TAV-7, TAV-8
+  const row2 = document.createElement('div');
+  row2.className = "tables-grid";
+  for(let i=5; i<=8; i++){
+    const idx = tableNames.indexOf(`TAV-${i}`);
+    if(idx !== -1){
+      const b = document.createElement('button');
+      b.className = "table-btn";
+      b.textContent = `TAV-${i}`;
+      b.onclick = ()=> openForTable(idx);
+      row2.appendChild(b);
+    }
+  }
+  container.appendChild(row2);
+  
+  // Riga 4: TAV-9, TAV-10, TAV-11, TAV-12
+  const row3 = document.createElement('div');
+  row3.className = "tables-grid";
+  for(let i=9; i<=12; i++){
+    const idx = tableNames.indexOf(`TAV-${i}`);
+    if(idx !== -1){
+      const b = document.createElement('button');
+      b.className = "table-btn";
+      b.textContent = `TAV-${i}`;
+      b.onclick = ()=> openForTable(idx);
+      row3.appendChild(b);
+    }
+  }
+  container.appendChild(row3);
+  
+  // Riga 5: BANCO, SALA, SALAF, +
+  const row4 = document.createElement('div');
+  row4.className = "tables-grid";
+  
+  const bancoIdx = tableNames.indexOf("BANCO");
+  if(bancoIdx !== -1){
+    const b = document.createElement('button');
+    b.className = "table-btn";
+    b.textContent = "BANCO";
+    b.onclick = ()=> openForTable(bancoIdx);
+    row4.appendChild(b);
+  }
+  
+  const salaIdx = tableNames.indexOf("SALA");
+  if(salaIdx !== -1){
+    const b = document.createElement('button');
+    b.className = "table-btn";
+    b.textContent = "SALA";
+    b.onclick = ()=> openForTable(salaIdx);
+    row4.appendChild(b);
+  }
+  
+  const salafIdx = tableNames.indexOf("SALAF");
+  if(salafIdx !== -1){
+    const b = document.createElement('button');
+    b.className = "table-btn";
+    b.textContent = "SALAF";
+    b.onclick = ()=> openForTable(salafIdx);
+    row4.appendChild(b);
+  }
+  
+  const plusBtn = document.createElement('button');
+  plusBtn.className = "table-btn";
+  plusBtn.textContent = "+";
+  plusBtn.onclick = ()=> openCustomTablesPopup();
+  row4.appendChild(plusBtn);
+  
+  container.appendChild(row4);
+}
+
+function renderSavedButtons(){
+  // Ordini salvati a sinistra
+  savedOrdersDiv.innerHTML = "";
+  savedOrders.forEach(s=>{
+    const b = document.createElement('button');
+    b.className = "table-btn";
+    b.textContent = s.tableName;
+    b.onclick = ()=> openForSaved(s.id);
+    savedOrdersDiv.appendChild(b);
+  });
+}
+
+/* Popup tavoli personalizzati */
+function openCustomTablesPopup(){
+  currentTarget = {type:null, id:null};
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  orderList.innerHTML = "";
+  
+  const customTables = tableNames.filter(n => !n.startsWith("TAV-") && !["BANCO","SALA","SALAF"].includes(n));
+  
+  if(customTables.length === 0){
+    const empty = document.createElement('div');
+    empty.textContent = "Nessun tavolo personalizzato creato";
+    empty.style.textAlign = "center";
+    empty.style.padding = "20px";
+    orderList.appendChild(empty);
+  } else {
+    customTables.forEach(tableName => {
+      const box = document.createElement('div');
+      box.style.border = "1px solid #444";
+      box.style.borderRadius = "6px";
+      box.style.padding = "12px";
+      box.style.marginBottom = "8px";
+      box.style.display = "flex";
+      box.style.justifyContent = "space-between";
+      box.style.alignItems = "center";
+      
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = tableName;
+      nameDiv.style.fontSize = "18px";
+      nameDiv.style.fontWeight = "700";
+      
+      const actionsBox = document.createElement('div');
+      actionsBox.style.display = "flex";
+      actionsBox.style.gap = "8px";
+      
+      const openBtn = document.createElement('button');
+      openBtn.textContent = "Apri";
+      openBtn.onclick = ()=> {
+        const idx = tableNames.indexOf(tableName);
+        if(idx !== -1){
+          closePopup();
+          openForTable(idx);
+        }
+      };
+      
+      const delBtn = document.createElement('button');
+      delBtn.textContent = "Elimina";
+      delBtn.style.background = "#aa0000";
+      delBtn.onclick = ()=> {
+        const idx = tableNames.indexOf(tableName);
+        if(idx !== -1){
+          tableNames.splice(idx,1);
+          saveData();
+          openCustomTablesPopup();
+        }
+      };
+      
+      actionsBox.appendChild(openBtn);
+      actionsBox.appendChild(delBtn);
+      box.appendChild(nameDiv);
+      box.appendChild(actionsBox);
+      orderList.appendChild(box);
+    });
+  }
+  
+  actionsDiv.innerHTML = "";
+  
+  const addBtn = document.createElement('button');
+  addBtn.textContent = "+ Aggiungi Tavolo";
+  addBtn.style.background = "#00aa00";
+  addBtn.onclick = ()=> {
+    const newName = prompt("Nome del nuovo tavolo:");
+    if(newName && !tableNames.includes(newName)){
+      tableNames.push(newName);
+      renderTables();
+      saveData();
+      openCustomTablesPopup();
+    }
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  
+  actionsDiv.appendChild(addBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  popupTitle.textContent = "Tavoli Personalizzati";
+  popup.style.display = 'flex';
+}
+
+/* aperture modale */
+function openForTable(tableIndex){
+  currentTarget = {type:'table', id: tableIndex};
+  popupTitle.textContent = tableNames[tableIndex];
+  categoriesDiv.style.display = 'grid';
+  modifiersDiv.style.display = 'flex';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  renderOrderList();
+  renderActionsForTable();
+  popup.style.display = 'flex';
+}
+function openForSaved(savedId){
+  const saved = savedOrders.find(x=>x.id===savedId);
+  if(!saved) return;
+  currentTarget = {type:'saved', id: savedId};
+  popupTitle.textContent = saved.tableName;
+  categoriesDiv.style.display = 'grid';
+  modifiersDiv.style.display = 'flex';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  renderOrderList();
+  renderActionsForSaved();
+  popup.style.display = 'flex';
+}
+
+/* azioni */
+function renderActionsForTable(){
+  actionsDiv.innerHTML = "";
+
+  const payBtn = document.createElement('button');
+  payBtn.textContent = "Pagato";
+  payBtn.onclick = ()=> {
+    const items = getEditingItems();
+    const total = items.reduce((sum, it) => sum + ((it.price || 0) * (it.qty || 1)), 0);
+    showConfirm(`Totale: €${total.toFixed(2)}`, ()=>{
+      // Salva l'ordine negli evasi prima di pagare
+      if(items && items.length > 0){
+        evasiOrders.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+          tableName: tableNames[currentTarget.id],
+          tableIndex: currentTarget.id,
+          items: JSON.parse(JSON.stringify(items)),
+          timestamp: new Date().toISOString(),
+          dateLabel: new Date().toLocaleString()
+        });
+      }
+      items.forEach(it=>{
+        const cat = detectCategory(it.name);
+        if(cat && totals[cat] !== undefined){
+          totals[cat] += (it.price || 0) * (it.qty || 1);
+        }
+      });
+      // Svuota il tavolo dopo il pagamento
+      tableOrders[currentTarget.id] = [];
+      renderOrderList();
+      saveData();
+      closePopup();
+    });
+  };
+
+  const accontoBtn = document.createElement('button');
+  accontoBtn.textContent = "Acconto";
+  accontoBtn.onclick = ()=> {
+    openAccontoPopup();
+  };
+
+  const createBtn = document.createElement('button');
+  createBtn.textContent = "Crea ordine";
+  createBtn.onclick = createSavedFromTable;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+
+  actionsDiv.appendChild(payBtn);
+  actionsDiv.appendChild(accontoBtn);
+  actionsDiv.appendChild(createBtn);
+  actionsDiv.appendChild(closeBtn);
+}
+
+function renderActionsForSaved(){
+  actionsDiv.innerHTML = "";
+  const payBtn = document.createElement('button');
+  payBtn.textContent = "Pagato";
+  payBtn.onclick = ()=> {
+    const items = getEditingItems();
+    const total = items.reduce((sum, it) => sum + ((it.price || 0) * (it.qty || 1)), 0);
+    showConfirm(`Totale: €${total.toFixed(2)}`, ()=>{
+      paySavedOrder(currentTarget.id);
+    });
+  };
+  const accontoBtn = document.createElement('button');
+  accontoBtn.textContent = "Acconto";
+  accontoBtn.onclick = ()=> { openAccontoPopup(); };
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(payBtn);
+  actionsDiv.appendChild(accontoBtn);
+  actionsDiv.appendChild(closeBtn);
+}
+
+/* Popup Acconto */
+function openAccontoPopup(){
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  orderList.innerHTML = "";
+  
+  const items = getEditingItems();
+  const selectedItems = new Set();
+  
+  if(!items || items.length === 0){
+    const empty = document.createElement('div');
+    empty.textContent = "Nessun prodotto nell'ordine";
+    empty.style.textAlign = "center";
+    empty.style.padding = "20px";
+    orderList.appendChild(empty);
+  } else {
+    const title = document.createElement('div');
+    title.textContent = "Seleziona i prodotti da pagare:";
+    title.style.fontWeight = "700";
+    title.style.marginBottom = "10px";
+    title.style.fontSize = "16px";
+    orderList.appendChild(title);
+    
+    items.forEach((it, i)=>{
+      const row = document.createElement('div');
+      row.style.border = "2px solid #444";
+      row.style.borderRadius = "6px";
+      row.style.padding = "12px";
+      row.style.marginBottom = "8px";
+      row.style.cursor = "pointer";
+      row.style.display = "flex";
+      row.style.justifyContent = "space-between";
+      row.style.alignItems = "center";
+      row.style.transition = "all 0.2s";
+      
+      const cat = detectCategory(it.name);
+      if(cat === 'caffe') row.style.background = '#888';
+      else if(cat === 'spina') row.style.background = '#ff8800';
+      else if(cat === 'frigo') row.style.background = '#0099ff';
+      else if(cat === 'super') row.style.background = '#aaaa00';
+      else if(cat === 'snack') row.style.background = '#ff0000';
+      else if(cat === 'tempo') row.style.background = '#008800';
+      else if(cat === 'quote') row.style.background = '#0000ff';
+      
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = `${it.qty} × ${it.name}`;
+      nameDiv.style.fontSize = "16px";
+      
+      const priceDiv = document.createElement('div');
+      const lineTotal = (it.qty * (it.price||0));
+      priceDiv.textContent = `€${lineTotal.toFixed(2)}`;
+      priceDiv.style.fontSize = "16px";
+      priceDiv.style.fontWeight = "700";
+      
+      row.appendChild(nameDiv);
+      row.appendChild(priceDiv);
+      
+      row.onclick = ()=> {
+        if(selectedItems.has(i)){
+          selectedItems.delete(i);
+          row.style.border = "2px solid #444";
+          row.style.opacity = "1";
+        } else {
+          selectedItems.add(i);
+          row.style.border = "2px solid #00ff00";
+          row.style.opacity = "0.8";
+        }
+      };
+      
+      orderList.appendChild(row);
+    });
+  }
+  
+  actionsDiv.innerHTML = "";
+  
+  const payBtn = document.createElement('button');
+  payBtn.textContent = "Pagato";
+  payBtn.style.background = "#00aa00";
+  payBtn.onclick = ()=> {
+    if(selectedItems.size === 0){
+      return;
+    }
+    
+    const selectedIndexes = Array.from(selectedItems).sort((a,b)=>b-a);
+    let totalAcconto = 0;
+    
+    selectedIndexes.forEach(idx => {
+      const item = items[idx];
+      totalAcconto += (item.price || 0) * (item.qty || 1);
+    });
+    
+    showConfirm(`Totale: €${totalAcconto.toFixed(2)}`, ()=>{
+      selectedIndexes.forEach(idx => {
+        const item = items[idx];
+        const cat = detectCategory(item.name);
+        if(cat && totals[cat] !== undefined){
+          totals[cat] += (item.price || 0) * (item.qty || 1);
+        }
+        
+        if(items && items.length > 0){
+          evasiOrders.push({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+            tableName: currentTarget.type === 'table' ? tableNames[currentTarget.id] : 'Riepilogo',
+            tableIndex: currentTarget.type === 'table' ? currentTarget.id : null,
+            items: [JSON.parse(JSON.stringify(item))],
+            timestamp: new Date().toISOString(),
+            dateLabel: new Date().toLocaleString()
+          });
+        }
+        
+        items.splice(idx, 1);
+      });
+      
+      saveData();
+      
+      if(items.length === 0 && currentTarget.type === 'saved'){
+        const idx = savedOrders.findIndex(s=>s.id === currentTarget.id);
+        if(idx !== -1) savedOrders.splice(idx,1);
+        closePopup();
+      } else {
+        // Torna al popup dell'ordine
+        if(currentTarget.type === 'table'){
+          openForTable(currentTarget.id);
+        } else if(currentTarget.type === 'saved'){
+          openForSaved(currentTarget.id);
+        }
+      }
+    });
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Annulla";
+  closeBtn.onclick = ()=> {
+    if(currentTarget.type === 'table'){
+      openForTable(currentTarget.id);
+    } else if(currentTarget.type === 'saved'){
+      openForSaved(currentTarget.id);
+    }
+  };
+  
+  actionsDiv.appendChild(payBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  popupTitle.textContent = "Acconto";
+  popup.style.display = 'flex';
+}
+
+function closePopup(){
+  popup.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  renderTables();
+  renderSavedButtons();
+  saveData();
+}
+
+/* sottocategorie */
+function showSubcatsByKey(key){
+  tempoPad.classList.add('hidden');
+  tempoValue = "";
+  if(tempoDisplay) tempoDisplay.value = "";
+  subcatsDiv.innerHTML = "";
+
+  if(key === 'c6'){ // TEMPO
+    openTempoPad();
+    return;
+  }
+
+  const list = CATALOG[key] || [];
+  list.forEach(item=>{
+    const btn = document.createElement('button');
+    btn.className = "subcat-btn";
+    if(key==="c1") btn.classList.add('cat-caffe');
+    if(key==="c2") btn.classList.add('cat-spina');
+    if(key==="c3") btn.classList.add('cat-frigo');
+    if(key==="c4") btn.classList.add('cat-super');
+    if(key==="c5") btn.classList.add('cat-snack');
+    if(key==="c7") btn.classList.add('cat-quote');
+    btn.textContent = item.name;
+    btn.onclick = ()=> addCatalogProduct(item.name, item.price);
+    subcatsDiv.appendChild(btn);
+  });
+
+  Array.from(subcatsDiv.children).forEach(ch=>{
+    if(ch.textContent === "CAFFÈ CORRETTO") ch.onclick = ()=> showOptionsAndAdd("CAFFÈ CORRETTO", [{name:"GRAPPA",price:1.50},{name:"SAMBUCA",price:1.50},{name:"BAILEYS",price:1.50},{name:"PRUGNA",price:1.50}], key);
+    if(ch.textContent === "SPRITZ") ch.onclick = ()=> showOptionsAndAdd("SPRITZ", [{name:"LISCIO",price:2.50},{name:"APEROL",price:3.00},{name:"CAMPARI",price:3.00},{name:"CYNAR",price:3.00}], key);
+    if(ch.textContent === "AMARO") ch.onclick = ()=> showOptionsAndAdd("AMARO", [{name:"MONTENEGRO",price:3.00},{name:"JAGERMEISTER",price:3.00},{name:"CAPO",price:3.00},{name:"BRAULIO",price:3.00},{name:"BRANCAMENTA",price:3.00},{name:"PETRUS",price:3.00}], key);
+    if(ch.textContent === "GRAPPA") ch.onclick = ()=> showOptionsAndAdd("GRAPPA", [{name:"BIANCA",price:3.00},{name:"24k",price:3.00},{name:"MIELE",price:3.00},{name:"CAMOMILLA",price:3.00},{name:"PRUGNA",price:3.00},{name:"MIRTILLO",price:3.00}], key);
+    if(ch.textContent === "COCKTAILS") ch.onclick = ()=> showOptionsAndAdd("COCKTAILS", [{name:"GIN TONIC",price:6.00},{name:"GIN TONIC H",price:8.00},{name:"GIN LEMON",price:6.00},{name:"GIN LEMON H",price:8.00},{name:"JACK COLA",price:8.00},{name:"RUM COLA",price:6.60},{name:"JAGERBOMB",price:8.00},{name:"VODKA TONIC",price:6.00},{name:"VODKA LEMON",price:6.00},{name:"AMERICANO",price:4.00}], key);
+  });
+
+  subcatsDiv.classList.remove('hidden');
+}
+
+function showOptionsAndAdd(base, options, parentKey){
+  subcatsDiv.innerHTML = "";
+  options.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className = "subcat-btn";
+    if(parentKey === 'c1') btn.classList.add('cat-caffe');
+    if(parentKey === 'c2') btn.classList.add('cat-spina');
+    if(parentKey === 'c3') btn.classList.add('cat-frigo');
+    if(parentKey === 'c4') btn.classList.add('cat-super');
+    if(parentKey === 'c5') btn.classList.add('cat-snack');
+    btn.textContent = opt.name;
+    btn.onclick = ()=> addCatalogProduct(`${base} ${opt.name}`, opt.price);
+    subcatsDiv.appendChild(btn);
+  });
+  const back = document.createElement('button');
+  back.textContent = '← Indietro';
+  back.className = 'back-btn';
+  back.onclick = ()=> showSubcatsByKey(parentKey);
+  subcatsDiv.appendChild(back);
+  subcatsDiv.classList.remove('hidden');
+}
+
+/* editing target */
+function getEditingItems(){
+  if(currentTarget.type === 'table'){
+    return tableOrders[currentTarget.id] || (tableOrders[currentTarget.id] = []);
+  } else if(currentTarget.type === 'saved'){
+    const s = savedOrders.find(x=>x.id===currentTarget.id);
+    if(!s) return [];
+    if(!s.items) s.items = [];
+    return s.items;
+  }
+  return [];
+}
+
+/* aggiungi prodotto */
+function addCatalogProduct(name, price){
+  const items = getEditingItems();
+  items.push({name, qty:1, price: typeof price === 'number' ? price : 0});
+  renderOrderList();
+  saveData();
+}
+
+/* modificatori */
+modifiersDiv.addEventListener('click', e=>{
+  if(!e.target.matches('button')) return;
+  const mod = e.target.dataset && e.target.dataset.mod || e.target.textContent;
+  const items = getEditingItems();
+  if(!items || items.length===0) return;
+  items[items.length-1].name += ` ${mod}`;
+  renderOrderList();
+  saveData();
+});
+
+/* render ordine */
+function renderOrderList(){
+  orderList.innerHTML = "";
+  const items = getEditingItems();
+  let total = 0;
+  (items || []).forEach((it, i)=>{
+    const row = document.createElement('div');
+    row.className = "order-row";
+    
+    // Colora la riga in base alla categoria
+    const cat = detectCategory(it.name);
+    if(cat === 'caffe') row.style.background = '#888';
+    else if(cat === 'spina') row.style.background = '#ff8800';
+    else if(cat === 'frigo') row.style.background = '#0099ff';
+    else if(cat === 'super') row.style.background = '#aaaa00';
+    else if(cat === 'snack') row.style.background = '#ff0000';
+    else if(cat === 'tempo') row.style.background = '#008800';
+    else if(cat === 'quote') row.style.background = '#0000ff';
+
+    const nameCell = document.createElement('div');
+    nameCell.className = "order-name";
+    nameCell.textContent = `${it.qty} × ${it.name}`;
+
+    const priceCell = document.createElement('div');
+    priceCell.className = "order-price";
+    const lineTotal = (it.qty * (it.price||0));
+    priceCell.textContent = `€${lineTotal.toFixed(2)}`;
+
+    row.appendChild(nameCell);
+    row.appendChild(priceCell);
+
+    row.onclick = ()=> {
+      if(accontoMode){
+        accontoMode = false;
+        const item = items[i];
+        const cat = detectCategory(item.name);
+        if(cat && totals[cat] !== undefined){
+          totals[cat] += (item.price || 0) * (item.qty || 1);
+        }
+        items.splice(i,1);
+        if(items.length === 0 && currentTarget.type === 'saved'){
+          const idx = savedOrders.findIndex(s=>s.id === currentTarget.id);
+          if(idx !== -1) savedOrders.splice(idx,1);
+          closePopup();
+        } else {
+          renderOrderList();
+        }
+        saveData();
+      } else {
+        items.splice(i,1);
+        renderOrderList();
+        saveData();
+      }
+    };
+
+    orderList.appendChild(row);
+    total += lineTotal;
+  });
+
+  if(items && items.length>0){
+    const totDiv = document.createElement('div');
+    totDiv.className = "order-row";
+    totDiv.style.fontWeight = '700';
+    const nameCell = document.createElement('div');
+    nameCell.className = "order-name";
+    nameCell.textContent = 'Totale Ordine';
+    const priceCell = document.createElement('div');
+    priceCell.className = "order-price";
+    priceCell.textContent = `€${total.toFixed(2)}`;
+    totDiv.appendChild(nameCell);
+    totDiv.appendChild(priceCell);
+    orderList.appendChild(totDiv);
+  }
+}
+
+/* create saved */
+function createSavedFromTable(){
+  if(currentTarget.type !== 'table') return;
+  const items = getEditingItems();
+  if(!items || items.length===0){
+    return;
+  }
+  const id = Date.now().toString(36);
+  savedOrders.push({ id, tableName: tableNames[currentTarget.id], items: JSON.parse(JSON.stringify(items)) });
+  tableOrders[currentTarget.id] = [];
+  renderOrderList();
+  renderSavedButtons();
+  closePopup();
+  saveData();
+}
+
+/* tempo pad */
+function openTempoPad(){
+  tempoValue = "";
+  if(tempoDisplay) tempoDisplay.value = "";
+  tempoPad.classList.remove('hidden');
+  subcatsDiv.classList.add('hidden');
+}
+document.getElementById('tempo-numpad').addEventListener('click', e=>{
+  if(!e.target.matches('button')) return;
+  const k = e.target.dataset.key;
+  if(!k) return;
+  if(k === '.'){
+    if(tempoValue.includes('.')) return;
+    if(tempoValue === "") tempoValue = "0.";
+    else tempoValue += '.';
+  } else {
+    if(tempoValue.length >= 9) return;
+    tempoValue += k;
+  }
+  tempoDisplay.value = tempoValue || "0";
+});
+document.getElementById('tempo-ok').addEventListener('click', ()=>{
+  const v = parseFloat(tempoValue);
+  if(isNaN(v) || v <= 0){ return; }
+  addCatalogProduct("TEMPO", v);
+  tempoValue = "";
+  tempoDisplay.value = "";
+  tempoPad.classList.add('hidden');
+});
+
+/* pagamento riepilogo */
+function paySavedOrder(savedId){
+  const idx = savedOrders.findIndex(s=>s.id === savedId);
+  if(idx === -1) return;
+  const saved = savedOrders[idx];
+  // Salva negli evasi
+  if(saved.items && saved.items.length > 0){
+    evasiOrders.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      tableName: saved.tableName,
+      tableIndex: null,
+      items: JSON.parse(JSON.stringify(saved.items)),
+      timestamp: new Date().toISOString(),
+      dateLabel: new Date().toLocaleString()
+    });
+  }
+  saved.items.forEach(it=>{
+    const cat = detectCategory(it.name);
+    if(cat && totals[cat] !== undefined){
+      totals[cat] += (it.price || 0) * (it.qty || 1);
+    }
+  });
+  savedOrders.splice(idx,1);
+  renderSavedButtons();
+  closePopup();
+  saveData();
+}
+
+/* Totali popup */
+function openTotals(){
+  currentTarget = {type:null, id:null};
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  orderList.innerHTML = "";
+
+  Object.keys(totals).forEach(k=>{
+    const row = document.createElement('div');
+    row.className = "order-row";
+    const nameCell = document.createElement('div');
+    nameCell.className = "order-name";
+    nameCell.textContent = k.toUpperCase();
+    const priceCell = document.createElement('div');
+    priceCell.className = "order-price";
+    priceCell.textContent = `€${totals[k].toFixed(2)}`;
+    row.appendChild(nameCell);
+    row.appendChild(priceCell);
+    orderList.appendChild(row);
+  });
+
+  const total = Object.values(totals).reduce((a,b)=>a+b,0).toFixed(2);
+  const totRow = document.createElement('div');
+  totRow.className = "order-row";
+  totRow.style.fontWeight = '700';
+  const nameCell = document.createElement('div');
+  nameCell.className = "order-name";
+  nameCell.textContent = "TOTALE COMPLESSIVO";
+  const priceCell = document.createElement('div');
+  priceCell.className = "order-price";
+  priceCell.textContent = `€${total}`;
+  totRow.appendChild(nameCell);
+  totRow.appendChild(priceCell);
+  orderList.appendChild(totRow);
+
+  actionsDiv.innerHTML = "";
+  const reset = document.createElement('button');
+  reset.textContent = "Reset Totali";
+  reset.onclick = ()=> {
+    exportTotalsToCSV();
+    // salva nello storico con timestamp ISO e label leggibile
+    storico.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      dateISO: new Date().toISOString(),
+      dateLabel: new Date().toLocaleString(),
+      totali: {...totals},
+      totale: parseFloat(total)
+    });
+    Object.keys(totals).forEach(k=>totals[k]=0);
+    saveData();
+    openTotals();
+  };
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(reset);
+  actionsDiv.appendChild(closeBtn);
+
+  popupTitle.textContent = "Totali";
+  popup.style.display = 'flex';
+}
+
+/* Evasi */
+function openEvasi(){
+  currentTarget = {type:null, id:null};
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  orderList.innerHTML = "";
+
+  if(!evasiOrders || evasiOrders.length === 0){
+    const empty = document.createElement('div');
+    empty.textContent = "Nessun ordine evaso";
+    empty.style.textAlign = "center";
+    empty.style.padding = "20px";
+    orderList.appendChild(empty);
+  } else {
+    // mostra dal più recente
+    evasiOrders.slice().reverse().forEach(entry=>{
+      const box = document.createElement('div');
+      box.style.border = "1px solid #444";
+      box.style.borderRadius = "6px";
+      box.style.padding = "12px";
+      box.style.marginBottom = "8px";
+
+      const titolo = document.createElement('div');
+      titolo.style.fontWeight = "700";
+      titolo.style.marginBottom = "8px";
+      const totalOrder = entry.items.reduce((sum, it) => sum + ((it.price || 0) * (it.qty || 1)), 0);
+      titolo.textContent = `${entry.tableName} — ${entry.dateLabel} — €${totalOrder.toFixed(2)}`;
+      box.appendChild(titolo);
+
+      const itemsList = document.createElement('div');
+      itemsList.style.fontSize = "14px";
+      itemsList.style.marginBottom = "8px";
+      entry.items.forEach(it=>{
+        const itemDiv = document.createElement('div');
+        itemDiv.textContent = `${it.qty} × ${it.name} — €${((it.price||0) * (it.qty||1)).toFixed(2)}`;
+        itemsList.appendChild(itemDiv);
+      });
+      box.appendChild(itemsList);
+
+      const actionsBox = document.createElement('div');
+      actionsBox.style.display = "flex";
+      actionsBox.style.gap = "8px";
+      actionsBox.style.marginTop = "8px";
+
+      const restoreBtn = document.createElement('button');
+      restoreBtn.textContent = "Ripristina";
+      restoreBtn.style.background = "#00aa00";
+      restoreBtn.onclick = ()=> {
+        // Ripristina l'ordine
+        if(entry.tableIndex !== null && entry.tableIndex !== undefined){
+          // Ripristina su tavolo
+          if(!tableOrders[entry.tableIndex]) tableOrders[entry.tableIndex] = [];
+          tableOrders[entry.tableIndex].push(...JSON.parse(JSON.stringify(entry.items)));
+        } else {
+          // Ripristina come ordine salvato
+          const newId = Date.now().toString(36);
+          savedOrders.push({
+            id: newId,
+            tableName: entry.tableName,
+            items: JSON.parse(JSON.stringify(entry.items))
+          });
+        }
+        // Rimuovi dai totali
+        entry.items.forEach(it=>{
+          const cat = detectCategory(it.name);
+          if(cat && totals[cat] !== undefined){
+            totals[cat] -= (it.price || 0) * (it.qty || 1);
+            if(totals[cat] < 0) totals[cat] = 0;
+          }
+        });
+        // Rimuovi dagli evasi
+        const idx = evasiOrders.findIndex(e=>e.id === entry.id);
+        if(idx !== -1) evasiOrders.splice(idx,1);
+        saveData();
+        renderTables();
+        renderSavedButtons();
+        closePopup();
+      };
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = "Elimina";
+      delBtn.style.background = "#aa0000";
+      delBtn.onclick = ()=> {
+        const idx = evasiOrders.findIndex(e=>e.id === entry.id);
+        if(idx !== -1) evasiOrders.splice(idx,1);
+        saveData();
+        openEvasi();
+      };
+
+      actionsBox.appendChild(restoreBtn);
+      actionsBox.appendChild(delBtn);
+      box.appendChild(actionsBox);
+
+      orderList.appendChild(box);
+    });
+  }
+
+  actionsDiv.innerHTML = "";
+  
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = "Reset Evasi";
+  resetBtn.style.background = "#aa0000";
+  resetBtn.onclick = ()=> {
+    if(evasiOrders.length === 0){
+      return;
+    }
+    exportEvasiToCSV();
+    evasiOrders = [];
+    saveData();
+    openEvasi();
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  
+  actionsDiv.appendChild(resetBtn);
+  actionsDiv.appendChild(closeBtn);
+
+  popupTitle.textContent = "Ordini Evasi";
+  popup.style.display = 'flex';
+}
+
+function exportEvasiToCSV(){
+  try {
+    let csv = "Data;Tavolo;Prodotto;Quantità;Prezzo Unitario;Totale\n";
+    
+    evasiOrders.forEach(order => {
+      const dateStr = order.dateLabel || order.timestamp || "";
+      order.items.forEach(item => {
+        const qty = item.qty || 1;
+        const price = item.price || 0;
+        const total = qty * price;
+        csv += `"${dateStr}";"${order.tableName}";"${item.name}";${qty};${price.toFixed(2).replace('.', ',')};${total.toFixed(2).replace('.', ',')}\n`;
+      });
+    });
+    
+    // Calcola totale complessivo
+    const totalComplessivo = evasiOrders.reduce((sum, order) => {
+      return sum + order.items.reduce((orderSum, item) => {
+        return orderSum + ((item.price || 0) * (item.qty || 1));
+      }, 0);
+    }, 0);
+    
+    csv += `\n"TOTALE COMPLESSIVO";"";"";"";"";${totalComplessivo.toFixed(2).replace('.', ',')}\n`;
+    
+    // Prova invio a Kodular / AppInventor
+    if (window.AppInventor && typeof AppInventor.setWebViewString === 'function') {
+      AppInventor.setWebViewString("SAVE_EVASI_CSV::" + csv);
+      setTimeout(() => {
+        AppInventor.setWebViewString("SAVE_EVASI_CSV_DONE");
+      }, 100);
+      return;
+    }
+    
+    // Fallback browser: scarica file
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
+    link.download = `evasi_${timestamp}.csv`;
+    link.href = URL.createObjectURL(blob);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch(e) {
+    console.error("Errore exportEvasiToCSV:", e);
+  }
+}
+
+/* Apply Background */
+function applyBackground(){
+  document.body.style.background = `#000 url("${currentBackground}") no-repeat center center fixed`;
+  document.body.style.backgroundSize = 'cover';
+  const popupContents = document.querySelectorAll('.popup-content, .confirm-box');
+  popupContents.forEach(el => {
+    el.style.background = `#000 url("${currentBackground}") no-repeat center center`;
+    el.style.backgroundSize = 'cover';
+  });
+}
+
+/* Settings */
+function openSettings(){
+  currentTarget = {type:null, id:null};
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  orderList.innerHTML = "";
+
+  const mainTitle = document.createElement('div');
+  mainTitle.textContent = "Impostazioni";
+  mainTitle.style.fontWeight = "700";
+  mainTitle.style.fontSize = "20px";
+  mainTitle.style.marginBottom = "20px";
+  mainTitle.style.textAlign = "center";
+  orderList.appendChild(mainTitle);
+
+  // Menu opzioni
+  const menuOptions = [
+    {name: "🎨 Cambia Sfondo", action: openBackgroundSettings},
+    {name: "📁 Gestisci Categorie", action: openCategorySettings},
+    {name: "🏷️ Gestisci Modificatori", action: openModifierSettings}
+  ];
+
+  menuOptions.forEach(option => {
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "15px";
+    box.style.marginBottom = "10px";
+    box.style.cursor = "pointer";
+    box.style.background = "#222";
+    box.style.transition = "all 0.2s";
+    box.style.textAlign = "center";
+    box.style.fontSize = "18px";
+    box.style.fontWeight = "700";
+    box.textContent = option.name;
+    
+    box.onclick = option.action;
+    box.onmouseenter = ()=> box.style.border = "2px solid #888";
+    box.onmouseleave = ()=> box.style.border = "2px solid #444";
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn);
+
+  popupTitle.textContent = "Settings";
+  popup.style.display = 'flex';
+}
+
+/* Background Settings */
+function openBackgroundSettings(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Scegli lo sfondo:";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const backgrounds = [
+    {name: "1", url: "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4"},
+    {name: "2", url: "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000178-38e6a38e6c/3.jpeg?ph=03d98711d4"},
+    {name: "3", url: "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000179-4670746709/2.jpeg?ph=03d98711d4"},
+    {name: "4", url: "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000182-5d7cd5d7cf/1.jpeg?ph=03d98711d4"},
+    {name: "5", url: "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000181-5763f57641/4.jpeg?ph=03d98711d4"},
+    {name: "6", url: "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000187-0e93e0e941/6.jpeg?ph=03d98711d4"}
+  ];
+
+  backgrounds.forEach(bg => {
+    const box = document.createElement('div');
+    box.style.border = currentBackground === bg.url ? "3px solid #00ff00" : "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "15px";
+    box.style.marginBottom = "10px";
+    box.style.cursor = "pointer";
+    box.style.background = "#222";
+    box.style.transition = "all 0.2s";
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = bg.name;
+    nameDiv.style.fontSize = "16px";
+    nameDiv.style.fontWeight = "700";
+    box.appendChild(nameDiv);
+    
+    box.onclick = ()=> {
+      currentBackground = bg.url;
+      applyBackground();
+      saveData();
+      openSettings();
+    };
+    
+    box.onmouseenter = ()=> {
+      if(currentBackground !== bg.url) box.style.border = "2px solid #888";
+    };
+    box.onmouseleave = ()=> {
+      if(currentBackground !== bg.url) box.style.border = "2px solid #444";
+    };
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "← Indietro";
+  backBtn.onclick = openSettings;
+  actionsDiv.appendChild(backBtn);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn);
+
+  popupTitle.textContent = "Sfondi";
+  popup.style.display = 'flex';
+}
+
+/* Category Settings */
+function openCategorySettings(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Gestisci Categorie e Prodotti";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const catKeys = Object.keys(CATALOG);
+  const catNames = {c1:"CAFFE", c2:"SPINA", c3:"FRIGO", c4:"SUPER", c5:"SNACK", c6:"TEMPO", c7:"QUOTE"};
+
+  catKeys.forEach(key => {
+    if(key === 'c6') return;
+    
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "12px";
+    box.style.marginBottom = "10px";
+    box.style.background = "#222";
+    
+    const header = document.createElement('div');
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.marginBottom = "10px";
+    
+    const catName = document.createElement('div');
+    catName.textContent = catNames[key] || key;
+    catName.style.fontSize = "16px";
+    catName.style.fontWeight = "700";
+    
+    const addBtn = document.createElement('button');
+    addBtn.textContent = "+ Aggiungi";
+    addBtn.style.padding = "8px 12px";
+    addBtn.style.fontSize = "14px";
+    addBtn.onclick = ()=> addProductToCategory(key);
+    
+    header.appendChild(catName);
+    header.appendChild(addBtn);
+    box.appendChild(header);
+    
+    const products = CATALOG[key] || [];
+    products.forEach((prod, idx) => {
+      const prodRow = document.createElement('div');
+      prodRow.style.display = "flex";
+      prodRow.style.justifyContent = "space-between";
+      prodRow.style.alignItems = "center";
+      prodRow.style.padding = "8px";
+      prodRow.style.borderTop = "1px solid #444";
+      
+      const prodInfo = document.createElement('div');
+      prodInfo.textContent = `${prod.name} - €${prod.price.toFixed(2)}`;
+      prodInfo.style.fontSize = "14px";
+      
+      const actions = document.createElement('div');
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+      
+      const editBtn = document.createElement('button');
+      editBtn.textContent = "Modifica";
+      editBtn.style.padding = "6px 10px";
+      editBtn.style.fontSize = "12px";
+      editBtn.onclick = ()=> editProduct(key, idx);
+      
+      const delBtn = document.createElement('button');
+      delBtn.textContent = "Elimina";
+      delBtn.style.padding = "6px 10px";
+      delBtn.style.fontSize = "12px";
+      delBtn.style.background = "#aa0000";
+      delBtn.onclick = ()=> deleteProduct(key, idx);
+      
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      prodRow.appendChild(prodInfo);
+      prodRow.appendChild(actions);
+      box.appendChild(prodRow);
+    });
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  
+  const backBtn2 = document.createElement('button');
+  backBtn2.textContent = "← Indietro";
+  backBtn2.onclick = openSettings;
+  actionsDiv.appendChild(backBtn2);
+  
+  const closeBtn2 = document.createElement('button');
+  closeBtn2.textContent = "Chiudi";
+  closeBtn2.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn2);
+
+  popupTitle.textContent = "Categorie";
+  popup.style.display = 'flex';
+}
+
+function addProductToCategory(catKey){
+  const name = prompt("Nome prodotto:");
+  if(!name) return;
+  const priceStr = prompt("Prezzo (es: 2.50):");
+  if(!priceStr) return;
+  const price = parseFloat(priceStr);
+  if(isNaN(price)) return;
+  
+  if(!CATALOG[catKey]) CATALOG[catKey] = [];
+  CATALOG[catKey].push({name, price});
+  saveData();
+  openCategorySettings();
+}
+
+function editProduct(catKey, idx){
+  const prod = CATALOG[catKey][idx];
+  const name = prompt("Nome prodotto:", prod.name);
+  if(!name) return;
+  const priceStr = prompt("Prezzo (es: 2.50):", prod.price);
+  if(!priceStr) return;
+  const price = parseFloat(priceStr);
+  if(isNaN(price)) return;
+  
+  CATALOG[catKey][idx] = {name, price};
+  saveData();
+  openCategorySettings();
+}
+
+function deleteProduct(catKey, idx){
+  if(confirm(`Eliminare "${CATALOG[catKey][idx].name}"?`)){
+    CATALOG[catKey].splice(idx, 1);
+    saveData();
+    openCategorySettings();
+  }
+}
+
+/* Render Modifiers */
+function renderModifiers(){
+  modifiersDiv.innerHTML = "";
+  modifiersList.forEach(mod => {
+    const btn = document.createElement('button');
+    btn.setAttribute('data-mod', mod);
+    btn.textContent = mod;
+    modifiersDiv.appendChild(btn);
+  });
+}
+
+/* Modifier Settings */
+function openModifierSettings(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Gestisci Modificatori";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const subtitle = document.createElement('div');
+  subtitle.textContent = "I modificatori vengono aggiunti al nome del prodotto";
+  subtitle.style.fontSize = "14px";
+  subtitle.style.marginBottom = "15px";
+  subtitle.style.color = "#aaa";
+  orderList.appendChild(subtitle);
+
+  modifiersList.forEach((mod, idx) => {
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "12px";
+    box.style.marginBottom = "10px";
+    box.style.background = "#222";
+    box.style.display = "flex";
+    box.style.justifyContent = "space-between";
+    box.style.alignItems = "center";
+    
+    const modName = document.createElement('div');
+    modName.textContent = mod;
+    modName.style.fontSize = "16px";
+    modName.style.fontWeight = "700";
+    
+    const actions = document.createElement('div');
+    actions.style.display = "flex";
+    actions.style.gap = "8px";
+    
+    const editBtn = document.createElement('button');
+    editBtn.textContent = "Modifica";
+    editBtn.style.padding = "8px 12px";
+    editBtn.style.fontSize = "14px";
+    editBtn.onclick = ()=> editModifier(idx);
+    
+    const delBtn = document.createElement('button');
+    delBtn.textContent = "Elimina";
+    delBtn.style.padding = "8px 12px";
+    delBtn.style.fontSize = "14px";
+    delBtn.style.background = "#aa0000";
+    delBtn.onclick = ()=> deleteModifier(idx);
+    
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    box.appendChild(modName);
+    box.appendChild(actions);
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  
+  const addBtn = document.createElement('button');
+  addBtn.textContent = "+ Aggiungi Modificatore";
+  addBtn.style.background = "#00aa00";
+  addBtn.onclick = addModifier;
+  actionsDiv.appendChild(addBtn);
+  
+  const backBtn3 = document.createElement('button');
+  backBtn3.textContent = "← Indietro";
+  backBtn3.onclick = openSettings;
+  actionsDiv.appendChild(backBtn3);
+  
+  const closeBtn3 = document.createElement('button');
+  closeBtn3.textContent = "Chiudi";
+  closeBtn3.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn3);
+
+  popupTitle.textContent = "Modificatori";
+  popup.style.display = 'flex';
+}
+
+function addModifier(){
+  const name = prompt("Nome modificatore (es: SR, M, K):");
+  if(!name) return;
+  modifiersList.push(name.toUpperCase());
+  renderModifiers();
+  saveData();
+  openModifierSettings();
+}
+
+function editModifier(idx){
+  const current = modifiersList[idx];
+  const name = prompt("Nome modificatore:", current);
+  if(!name) return;
+  modifiersList[idx] = name.toUpperCase();
+  renderModifiers();
+  saveData();
+  openModifierSettings();
+}
+
+function deleteModifier(idx){
+  if(confirm(`Eliminare il modificatore "${modifiersList[idx]}"?`)){
+    modifiersList.splice(idx, 1);
+    renderModifiers();
+    saveData();
+    openModifierSettings();
+  }
+}
+
+/* Storico */
+function openStorico(){
+  currentTarget = {type:null, id:null};
+  categoriesDiv.style.display = 'none';
+  modifiersDiv.style.display = 'none';
+  subcatsDiv.classList.add('hidden');
+  tempoPad.classList.add('hidden');
+  orderList.innerHTML = "";
+
+  if(!storico || storico.length === 0){
+    const empty = document.createElement('div');
+    empty.textContent = "Nessuno storico disponibile";
+    orderList.appendChild(empty);
+  } else {
+    // mostra dal più recente
+    storico.slice().reverse().forEach(entry=>{
+      const box = document.createElement('div');
+      box.style.border = "1px solid #444";
+      box.style.borderRadius = "6px";
+      box.style.padding = "6px";
+      box.style.marginBottom = "8px";
+
+      const titolo = document.createElement('div');
+      titolo.style.fontWeight = "700";
+      titolo.textContent = `Data: ${entry.dateLabel || entry.dateISO || entry.date} — Totale: €${(entry.totale||Object.values(entry.totali||{}).reduce((a,b)=>a+b,0)).toFixed(2)}`;
+      box.appendChild(titolo);
+
+      const inner = document.createElement('div');
+      inner.style.marginTop = "6px";
+      for(const k in (entry.totali||{})){
+        const r = document.createElement('div');
+        r.textContent = `${k.toUpperCase()}: €${entry.totali[k].toFixed(2)}`;
+        inner.appendChild(r);
+      }
+      box.appendChild(inner);
+
+      const actionsBox = document.createElement('div');
+      actionsBox.style.display = "flex";
+      actionsBox.style.gap = "8px";
+      actionsBox.style.marginTop = "8px";
+
+      const exp = document.createElement('button');
+      exp.textContent = "Esporta";
+      exp.onclick = ()=> exportSingleHistoric(entry);
+
+      const del = document.createElement('button');
+      del.textContent = "Elimina";
+      del.onclick = ()=> {
+        const idx = storico.findIndex(s=>s.id === entry.id);
+        if(idx !== -1) storico.splice(idx,1);
+        saveData();
+        openStorico();
+      };
+
+      actionsBox.appendChild(exp);
+      actionsBox.appendChild(del);
+      box.appendChild(actionsBox);
+
+      orderList.appendChild(box);
+    });
+  }
+
+  actionsDiv.innerHTML = "";
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn);
+
+  popupTitle.textContent = "Storico";
+  popup.style.display = 'flex';
+}
+
+function exportSingleHistoric(entry){
+  const rows = [["Categoria","Totale (€)"]];
+  for(const k in (entry.totali||{})){
+    rows.push([k.toUpperCase(), (entry.totali[k]).toFixed(2).replace('.', ',')]);
+  }
+  rows.push(["TOTALE", ((entry.totale!==undefined)?entry.totale:Object.values(entry.totali||{}).reduce((a,b)=>a+b,0)).toFixed(2).replace('.', ',')]);
+  const csv = rows.map(r=>r.join(";")).join("\n");
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const fname = `storico_${(entry.dateISO||new Date().toISOString()).replace(/[:.]/g,'-')}.csv`;
+  link.href = URL.createObjectURL(blob);
+  link.download = fname;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* helper detect category */
+function detectCategory(name){
+  const s = (name||"").toLowerCase();
+  if(s.includes("caff")) return "caffe";
+  if(s.includes("pyraser")||s.includes("aria")||s.includes("guinness")||s.includes("spritz")) return "spina";
+  if(s.includes("acqua")||s.includes("coca")||s.includes("tè")||s.includes("fanta")||s.includes("lemon")||s.includes("red bull")) return "frigo";
+  if(s.includes("amaro")||s.includes("grappa")||s.includes("cocktail")||s.includes("baileys")||s.includes("jack")||s.includes("talisker")||s.includes("liquirizia")||s.includes("prugna cm")) return "super";
+  if(s.includes("toast")||s.includes("pizzetta")||s.includes("hot dog")) return "snack";
+  if(s.includes("tempo")) return "tempo";
+  if(s.includes("quota")||s.includes("quote")) return "quote";
+  return null;
+}
+
+/* delegazione click categorie */
+categoriesDiv.addEventListener('click', e=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const key = btn.dataset.cat;
+  if(!key) return;
+  showSubcatsByKey(key);
+});
+
+/* click esterno per chiudere popup */
+popup.addEventListener('click', e=>{ if(e.target === popup) closePopup(); });
+
+/* init */
+loadData();
+renderTables();
+renderSavedButtons();
+
+// helper: prova a inviare il CSV a App Inventor (WebViewer)
+function sendCsvToAppInventor(csv) {
+  try {
+    if (window.AppInventor && typeof AppInventor.setWebViewString === 'function') {
+      // prefisso unico per riconoscerlo nell'app
+      AppInventor.setWebViewString("EXPORT_CSV::" + csv);
+      return true;
+    }
+  } catch (e) {
+    console.error("sendCsvToAppInventor error", e);
+  }
+  return false;
+}
+
+// genera ed esporta il CSV (fallback download + invio a AppInventor)
+function exportTotalsToCSV() {
+  try {
+    // 1️⃣ Genera CSV
+    let csv = "Categoria;Totale (€)\n";
+    Object.keys(totals).forEach(k => {
+      csv += `${k.toUpperCase()};${totals[k].toFixed(2).replace('.', ',')}\n`;
+    });
+    const totaleCompl = Object.values(totals).reduce((a,b)=>a+b,0).toFixed(2).replace('.', ',');
+    csv += `TOTALE COMPLESSIVO;${totaleCompl}\n`;
+
+    // 2️⃣ Prova invio a Kodular / AppInventor
+    if (window.AppInventor && typeof AppInventor.setWebViewString === 'function') {
+      AppInventor.setWebViewString("SAVE_CSV::" + csv);
+      setTimeout(() => {
+        AppInventor.setWebViewString("SAVE_CSV_DONE");
+      }, 100);
+      return;
+    }
+
+    // 3️⃣ Fallback browser: scarica file
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
+    link.download = `totali_${timestamp}.csv`;
+    link.href = URL.createObjectURL(blob);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+  } catch(e) {
+    console.error("Errore exportTotalsToCSV:", e);
+  }
+}
+
+/* Register Service Worker */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => console.log('Service Worker registrato'))
+      .catch(err => console.log('Service Worker errore:', err));
+  });
+}
+</script>
+</body>
+</html>
