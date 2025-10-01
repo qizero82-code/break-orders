@@ -261,7 +261,7 @@ let confirmCallback = null;
 function saveData(){
   try{
     localStorage.setItem('breakOrdersState', JSON.stringify({
-      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, currentBackground, modifiersList, subcategories
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, currentBackground, currentFont, currentFontSize, fontSettings, modifiersList, subcategories
     }));
   }catch(e){ console.error(e) }
 }
