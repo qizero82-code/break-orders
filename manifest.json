@@ -2,7 +2,7 @@
   "name": "Break Orders",
   "short_name": "Break Orders",
   "description": "Sistema di gestione ordini per Break Billiard Club",
-  "start_url": "./index.html",
+  "start_url": "./index.html?v=2",
   "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
