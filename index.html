@@ -40,11 +40,12 @@
   }
   
   /* Barra tavoli in basso */
-  .tables-wrapper{position:fixed;bottom:10px;left:0;right:0;padding:10px;z-index:1000;background:rgba(0,0,0,0.06);box-sizing:border-box}
-  .tables-container{display:flex;flex-direction:column;gap:10px}
-  .utility-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .tables-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  button.table-btn{background:#000 !important;color:#fff !important;border-radius:10px !important;padding:21px !important;font-size:24px !important;font-weight:700 !important;min-height:70px !important;box-sizing:border-box !important}
+  .tables-wrapper{position:fixed;bottom:0.5vh;left:0;right:0;padding:0.5vh 1vw;z-index:1000;background:rgba(0,0,0,0.06);box-sizing:border-box;max-height:65vh;overflow-y:auto}
+  .tables-container{display:flex;flex-direction:column;gap:0.5vh}
+  .utility-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
+  .tables-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
+  button.table-btn{background:#000 !important;color:#fff !important;border-radius:8px !important;padding:1.5vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 20px) !important;font-weight:700 !important;min-height:auto !important;box-sizing:border-box !important;line-height:1.2 !important}
+  .utility-btn{padding:1.2vh 0.3vw;font-size:clamp(9px, 2vw, 14px);line-height:1.2}
   .popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;overflow:hidden;z-index:4000}
   .popup-content{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
 background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin:0;box-sizing:border-box;color:#fff;border:none;overflow:hidden;display:flex;flex-direction:column}
@@ -66,7 +67,7 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   .modifiers button{background:#444;color:#fff;font-weight:700;padding:10px;border:none;border-radius:6px;cursor:pointer;width:100%}
   .list div{padding:6px;border-bottom:1px solid #666;cursor:pointer}
   #order-list{background:transparent;color:#fff;padding:0;border-radius:8px;flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
-  .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%}
+  .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
   .actions button{padding:20px;font-size:18px;text-transform:uppercase;font-weight:700}
   .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
   .numpad button{font-size:18px;padding:14px;border-radius:8px;background:var(--tempo-color);color:#fff;border:none;width:100%;box-sizing:border-box;font-weight:700}
@@ -84,16 +85,35 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   .confirm-buttons button{padding:12px 24px;font-size:16px;border-radius:8px;cursor:pointer;border:none;font-weight:700}
   .btn-confirm{background:#00aa00;color:#fff}
   .btn-cancel{background:#aa0000;color:#fff}
-  /* Telefoni piccoli */
-  @media(max-width:480px){
-    .popup-content{padding:12px}
+  /* Smartphone - Layout verticale ottimizzato */
+  @media(max-width:768px){
+    .popup-content{width:100vw;height:100vh}
+    #saved-orders{max-width:90%;gap:5px}
+    #saved-orders button{padding:8px;font-size:13px}
+    .popup-content{padding:10px}
+    .popup-header{flex-direction:column;gap:8px;margin-bottom:10px}
+    .popup-header h3{text-align:center;font-size:18px}
+    .actions{justify-content:center;margin-bottom:8px}
+    .actions button{font-size:11px;padding:6px 10px}
+    .popup-main{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;gap:10px;overflow-y:auto}
+    .popup-column{padding:8px;overflow-y:visible}
+    .popup-column:nth-child(3){overflow-y:auto}
+    .column-title{font-size:12px;margin-bottom:6px}
+    #categories{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+    #subcats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+    .cat-btn,.subcat-btn{padding:8px 4px;font-size:11px}
+    .modifiers{flex-direction:row;flex-wrap:wrap;margin-top:6px}
+    .modifiers button{width:auto;flex:1;min-width:50px;padding:6px;font-size:11px}
+    #order-list{font-size:13px}
+    .order-row{padding:5px 0;font-size:13px}
     .numpad button{font-size:14px;padding:10px}
     .confirm-box{padding:20px}
-    button.table-btn{padding:16px !important;font-size:20px !important;min-height:60px !important}
   }
-  /* Tablet e telefoni grandi - mantieni tasti grandi */
-  @media(min-width:481px) and (max-width:1024px){
-    button.table-btn{padding:21px !important;font-size:24px !important;min-height:70px !important}
+  /* Telefoni piccoli */
+  @media(max-width:480px){
+    .actions button{font-size:10px;padding:5px 8px}
+    .cat-btn,.subcat-btn{font-size:10px;padding:6px 2px}
+    #saved-orders button{padding:1vh 1vw;font-size:clamp(10px, 2.5vw, 13px)}
   }
 </style>
 </head>
@@ -436,7 +456,52 @@ function renderSavedButtons(){
     const b = document.createElement('button');
     b.className = "table-btn";
     b.textContent = s.tableName;
+    
+    let pressTimer;
+    
+    // Click normale = apri ordine
     b.onclick = ()=> openForSaved(s.id);
+    
+    // Pressione lunga = rinomina ordine
+    b.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => {
+        const newName = prompt("Nuovo nome per l'ordine:", s.tableName);
+        if(newName && newName.trim()){
+          s.tableName = newName.trim();
+          saveData();
+          renderSavedButtons();
+        }
+      }, 800);
+    });
+    
+    b.addEventListener('touchend', () => {
+      clearTimeout(pressTimer);
+    });
+    
+    b.addEventListener('touchmove', () => {
+      clearTimeout(pressTimer);
+    });
+    
+    // Supporto mouse per desktop
+    b.addEventListener('mousedown', () => {
+      pressTimer = setTimeout(() => {
+        const newName = prompt("Nuovo nome per l'ordine:", s.tableName);
+        if(newName && newName.trim()){
+          s.tableName = newName.trim();
+          saveData();
+          renderSavedButtons();
+        }
+      }, 800);
+    });
+    
+    b.addEventListener('mouseup', () => {
+      clearTimeout(pressTimer);
+    });
+    
+    b.addEventListener('mouseleave', () => {
+      clearTimeout(pressTimer);
+    });
+    
     savedOrdersDiv.appendChild(b);
   });
 }
@@ -614,13 +679,28 @@ function openCustomTablesPopup(){
 
 /* aperture modale */
 function openForTable(tableIndex){
-  currentTarget = {type:'table', id: tableIndex};
-  popupTitle.textContent = tableNames[tableIndex];
+  const tableName = tableNames[tableIndex];
+  
+  // Cerca se esiste già un ordine salvato con lo stesso nome
+  let existingOrder = savedOrders.find(s => s.tableName === tableName);
+  
+  if(!existingOrder){
+    // Crea un nuovo ordine salvato
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    existingOrder = { id, tableName, items: [] };
+    savedOrders.push(existingOrder);
+    renderSavedButtons();
+    saveData();
+  }
+  
+  // Apri l'ordine salvato invece del tavolo
+  currentTarget = {type:'saved', id: existingOrder.id};
+  popupTitle.textContent = tableName;
   leftColumnDiv.style.display = 'grid';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   renderOrderList();
-  renderActionsForTable();
+  renderActionsForSaved();
   popup.style.display = 'flex';
 }
 function openForSaved(savedId){
@@ -677,17 +757,12 @@ function renderActionsForTable(){
     openAccontoPopup();
   };
 
-  const createBtn = document.createElement('button');
-  createBtn.textContent = "Crea ordine";
-  createBtn.onclick = createSavedFromTable;
-
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = closePopup;
 
   actionsDiv.appendChild(payBtn);
   actionsDiv.appendChild(accontoBtn);
-  actionsDiv.appendChild(createBtn);
   actionsDiv.appendChild(closeBtn);
 }
 
@@ -1063,8 +1138,21 @@ function createSavedFromTable(){
   if(!items || items.length===0){
     return;
   }
-  const id = Date.now().toString(36);
-  savedOrders.push({ id, tableName: tableNames[currentTarget.id], items: JSON.parse(JSON.stringify(items)) });
+  
+  const tableName = tableNames[currentTarget.id];
+  
+  // Cerca se esiste già un ordine salvato con lo stesso nome
+  const existingOrder = savedOrders.find(s => s.tableName === tableName);
+  
+  if(existingOrder){
+    // Aggiungi i prodotti all'ordine esistente
+    existingOrder.items.push(...JSON.parse(JSON.stringify(items)));
+  } else {
+    // Crea un nuovo ordine salvato
+    const id = Date.now().toString(36);
+    savedOrders.push({ id, tableName, items: JSON.parse(JSON.stringify(items)) });
+  }
+  
   tableOrders[currentTarget.id] = [];
   renderOrderList();
   renderSavedButtons();
