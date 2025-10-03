@@ -1,8 +1,10 @@
-const CACHE_NAME = 'break-orders-v5';
+const CACHE_NAME = 'break-orders-v6';
 const urlsToCache = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // Install service worker

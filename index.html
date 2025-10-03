@@ -12,6 +12,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Cherry+Cream+Soda&family=Dokdo&family=Irish+Grover&family=Mountains+of+Christmas:wght@400;700&family=Permanent+Marker&family=Rampart+One&family=Rubik+Vinyl&family=Swanky+and+Moo+Moo&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
 <title>Break Orders — Completo</title>
 <style>
   /* v2.1 - Tasti grandi su tablet */
@@ -45,6 +50,7 @@
   .utility-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
   .tables-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
   button.table-btn{background:#000 !important;color:#fff !important;border-radius:8px !important;padding:1.5vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 20px) !important;font-weight:700 !important;min-height:auto !important;box-sizing:border-box !important;line-height:1.2 !important}
+  button.table-btn.has-orders{background:#cc0000 !important}
   .utility-btn{padding:1.2vh 0.3vw;font-size:clamp(9px, 2vw, 14px);line-height:1.2}
   .popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;overflow:hidden;z-index:4000}
   .popup-content{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
@@ -55,7 +61,7 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   .popup-main{display:grid;grid-template-columns:1fr 1fr;gap:15px;flex:1;overflow:hidden}
   .popup-column{display:flex;flex-direction:column;overflow-y:auto;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px}
   .popup-column-left{display:grid;grid-template-rows:auto 1fr;gap:10px;overflow:hidden}
-  .categories-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .categories-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   .subcats-modifiers-wrapper{display:flex;flex-direction:column;gap:10px;overflow-y:auto;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px}
   .column-title{font-size:14px;font-weight:700;margin-bottom:10px;text-align:center;color:#fff}
   #categories{display:contents}
@@ -67,7 +73,7 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   .modifiers button{background:#444;color:#fff;font-weight:700;padding:10px;border:none;border-radius:6px;cursor:pointer;width:100%}
   .list div{padding:6px;border-bottom:1px solid #666;cursor:pointer}
   #order-list{background:transparent;color:#fff;padding:0;border-radius:8px;flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
-  .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+  .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%}
   .actions button{padding:20px;font-size:18px;text-transform:uppercase;font-weight:700}
   .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
   .numpad button{font-size:18px;padding:14px;border-radius:8px;background:var(--tempo-color);color:#fff;border:none;width:100%;box-sizing:border-box;font-weight:700}
@@ -85,7 +91,7 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   .confirm-buttons button{padding:12px 24px;font-size:16px;border-radius:8px;cursor:pointer;border:none;font-weight:700}
   .btn-confirm{background:#00aa00;color:#fff}
   .btn-cancel{background:#aa0000;color:#fff}
-  /* Smartphone - Layout verticale ottimizzato */
+  /* Smartphone - Layout a due colonne mantenuto */
   @media(max-width:768px){
     .popup-content{width:100vw;height:100vh}
     #saved-orders{max-width:90%;gap:5px}
@@ -95,12 +101,12 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
     .popup-header h3{text-align:center;font-size:18px}
     .actions{justify-content:center;margin-bottom:8px}
     .actions button{font-size:11px;padding:6px 10px}
-    .popup-main{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;gap:10px;overflow-y:auto}
-    .popup-column{padding:8px;overflow-y:visible}
-    .popup-column:nth-child(3){overflow-y:auto}
+    .popup-main{grid-template-columns:1fr 1fr;gap:10px;overflow:hidden}
+    .popup-column{padding:8px;overflow-y:auto}
+    .popup-column-left{display:grid;grid-template-rows:1fr;overflow:hidden}
     .column-title{font-size:12px;margin-bottom:6px}
-    #categories{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-    #subcats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+    .categories-grid{grid-template-columns:repeat(4,1fr);gap:5px}
+    #subcats{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
     .cat-btn,.subcat-btn{padding:8px 4px;font-size:11px}
     .modifiers{flex-direction:row;flex-wrap:wrap;margin-top:6px}
     .modifiers button{width:auto;flex:1;min-width:50px;padding:6px;font-size:11px}
@@ -143,23 +149,21 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
       <div class="popup-header">
         <h3 id="popup-title">Tavolo</h3>
         <div class="actions" id="actions"></div>
+        <div class="categories-grid">
+          <button class="cat-btn cat-caffe" data-cat="c1">CAFFE</button>
+          <button class="cat-btn cat-spina" data-cat="c2">SPINA</button>
+          <button class="cat-btn cat-frigo" data-cat="c3">FRIGO</button>
+          <button class="cat-btn cat-super" data-cat="c4">SUPER</button>
+          <button class="cat-btn cat-snack" data-cat="c5">SNACK</button>
+          <button class="cat-btn cat-tempo" data-cat="c6">TEMPO</button>
+          <button class="cat-btn cat-quote" data-cat="c7">QUOTE</button>
+          <button class="cat-btn cat-cassa" data-cat="c8">CASSA</button>
+        </div>
       </div>
       
       <div class="popup-main">
         <!-- Colonna Sinistra: Categorie + Sottocategorie/Modificatori -->
         <div class="popup-column-left">
-          <!-- Categorie su 2 file -->
-          <div class="categories-grid">
-            <button class="cat-btn cat-caffe" data-cat="c1">CAFFE</button>
-            <button class="cat-btn cat-spina" data-cat="c2">SPINA</button>
-            <button class="cat-btn cat-frigo" data-cat="c3">FRIGO</button>
-            <button class="cat-btn cat-super" data-cat="c4">SUPER</button>
-            <button class="cat-btn cat-snack" data-cat="c5">SNACK</button>
-            <button class="cat-btn cat-tempo" data-cat="c6">TEMPO</button>
-            <button class="cat-btn cat-quote" data-cat="c7">QUOTE</button>
-            <button class="cat-btn cat-cassa" data-cat="c8">CASSA</button>
-          </div>
-          
           <!-- Sottocategorie e Modificatori dalla metà in giù -->
           <div class="subcats-modifiers-wrapper">
             <div id="subcats" aria-live="polite"></div>
@@ -200,6 +204,39 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   </div>
 
 <script>
+/* ========== FIREBASE CONFIGURATION ========== */
+// Configurazione Firebase per sincronizzazione in tempo reale
+const firebaseConfig = {
+  apiKey: "AIzaSyBZn0t52sJ4W7hsJEAPjaCpuOlR5al7hOU",
+  authDomain: "breakcounter-6ecc0.firebaseapp.com",
+  databaseURL: "https://breakcounter-6ecc0-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "breakcounter-6ecc0",
+  storageBucket: "breakcounter-6ecc0.firebasestorage.app",
+  messagingSenderId: "1078008487853",
+  appId: "1:1078008487853:web:7145962aa0bc1772ec8b24"
+};
+
+let firebaseApp = null;
+let database = null;
+let firebaseEnabled = false;
+let isUpdatingFromFirebase = false; // Flag per evitare loop di aggiornamenti
+
+// Inizializza Firebase
+try {
+  // Verifica se la configurazione è stata personalizzata
+  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebaseApp = firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+    firebaseEnabled = true;
+    console.log("✅ Firebase inizializzato correttamente");
+  } else {
+    console.warn("⚠️ Firebase non configurato. Usando solo localStorage locale.");
+  }
+} catch (e) {
+  console.error("❌ Errore inizializzazione Firebase:", e);
+  firebaseEnabled = false;
+}
+
 /* Popup conferma personalizzato */
 function showConfirm(message, onConfirm, title = "Conferma"){
   const confirmPopup = document.getElementById('confirm-popup');
@@ -232,7 +269,7 @@ document.getElementById('confirm-cancel').addEventListener('click', ()=>{
 /* stato */
 const tableNames = ["TAV-1","TAV-2","TAV-3","TAV-4","TAV-5","TAV-6","TAV-7","TAV-8","TAV-9","TAV-10","TAV-11","TAV-12","BANCO","SALA","SALAF"];
 let tableOrders = {}; // {index: [{name,qty,price,cat}, ...], ...}
-let savedOrders = []; // {id, tableName, items: [...]}
+let savedOrders = []; // {id, tableName, items: [...], consegnato: false, timestampDone: null}
 let totals = {caffe:0,spina:0,frigo:0,super:0,snack:0,tempo:0,quote:0,cassa:0};
 let currentTarget = {type:null, id:null};
 let accontoMode = false;
@@ -280,30 +317,75 @@ let confirmCallback = null;
 
 function saveData(){
   try{
-    localStorage.setItem('breakOrdersState', JSON.stringify({
-      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, currentBackground, currentFont, currentFontSize, fontSettings, modifiersList, subcategories
-    }));
-  }catch(e){ console.error(e) }
+    // Dati da sincronizzare su Firebase (ordini + nomi tavoli)
+    const firebaseData = {
+      tableOrders, 
+      savedOrders, 
+      totals, 
+      storico, 
+      evasiOrders,
+      tableNames
+    };
+    
+    // Dati completi da salvare in localStorage (ordini + impostazioni)
+    const localData = {
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, 
+      currentBackground, currentFont, currentFontSize, fontSettings, 
+      modifiersList, subcategories
+    };
+    
+    // Salva sempre in localStorage come backup
+    localStorage.setItem('breakOrdersState', JSON.stringify(localData));
+    
+    // Se Firebase è abilitato, sincronizza SOLO gli ordini
+    if (firebaseEnabled && database && !isUpdatingFromFirebase) {
+      database.ref('breakOrders').set(firebaseData).catch(err => {
+        console.error("Errore salvataggio Firebase:", err);
+      });
+    }
+  }catch(e){ 
+    console.error("Errore saveData:", e);
+  }
 }
 function loadData(){
   try{
     const raw = localStorage.getItem('breakOrdersState');
     if(!raw) return;
     const parsed = JSON.parse(raw);
-    tableOrders = parsed.tableOrders || {};
-    // normalize savedOrders to {id,tableName,items}
-    if(Array.isArray(parsed.savedOrders)){
-      savedOrders = parsed.savedOrders.map(s=>{
-        if(!s) return null;
-        const id = s.id || s.name || (Date.now().toString(36)+Math.random().toString(36).slice(2,6));
-        const tableName = s.tableName || s.name || s.table || "Riepilogo";
-        const items = s.items || s.itemsList || [];
-        return { id, tableName, items };
-      }).filter(Boolean);
-    } else savedOrders = [];
-    totals = parsed.totals || totals;
-    storico = parsed.storico || parsed.storicoList || [];
-    evasiOrders = parsed.evasiOrders || [];
+    applyParsedData(parsed);
+  }catch(e){ 
+    console.error("Errore loadData:", e);
+  }
+}
+
+// Funzione helper per applicare i dati parsati
+function applyParsedData(parsed, fromFirebase = false){
+  if(!parsed) return;
+  
+  tableOrders = parsed.tableOrders || {};
+  // normalize savedOrders to {id,tableName,items,consegnato}
+  if(Array.isArray(parsed.savedOrders)){
+    savedOrders = parsed.savedOrders.map(s=>{
+      if(!s) return null;
+      const id = s.id || s.name || (Date.now().toString(36)+Math.random().toString(36).slice(2,6));
+      const tableName = s.tableName || s.name || s.table || "Riepilogo";
+      const items = s.items || s.itemsList || [];
+      const consegnato = s.consegnato || false;
+      const timestampDone = s.timestampDone || null;
+      return { id, tableName, items, consegnato, timestampDone };
+    }).filter(Boolean);
+  } else savedOrders = [];
+  totals = parsed.totals || totals;
+  // Assicura che tutte le categorie esistano
+  if(!totals.cassa) totals.cassa = 0;
+  storico = parsed.storico || parsed.storicoList || [];
+  evasiOrders = parsed.evasiOrders || [];
+  
+  // Sincronizza tableNames da Firebase
+  if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
+  
+  // Carica impostazioni SOLO da localStorage, NON da Firebase
+  if(!fromFirebase){
     currentBackground = parsed.currentBackground || currentBackground;
     currentFont = parsed.currentFont || currentFont;
     currentFontSize = parsed.currentFontSize || currentFontSize;
@@ -314,7 +396,63 @@ function loadData(){
     applyBackground();
     applyFont();
     renderModifiers();
-  }catch(e){ console.error(e) }
+  }
+}
+
+// Setup Firebase Real-time Sync
+function setupFirebaseSync(){
+  if(!firebaseEnabled || !database) return;
+  
+  console.log("🔄 Attivazione sincronizzazione Firebase...");
+  
+  // Listener per aggiornamenti in tempo reale
+  database.ref('breakOrders').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if(data){
+      console.log("📥 Ricevuti dati da Firebase");
+      isUpdatingFromFirebase = true;
+      applyParsedData(data, true); // true = da Firebase, non caricare impostazioni
+      renderTables();
+      renderSavedButtons();
+      isUpdatingFromFirebase = false;
+    }
+  }, (error) => {
+    console.error("❌ Errore listener Firebase:", error);
+  });
+  
+  // Carica i dati iniziali da Firebase
+  database.ref('breakOrders').once('value').then((snapshot) => {
+    const data = snapshot.val();
+    if(data){
+      console.log("📥 Caricamento iniziale da Firebase completato");
+      isUpdatingFromFirebase = true;
+      
+      // Carica impostazioni locali PRIMA di applicare dati Firebase
+      const localSettings = localStorage.getItem('breakOrdersState');
+      if(localSettings){
+        const parsed = JSON.parse(localSettings);
+        applyParsedData(parsed, false); // Carica impostazioni locali
+      }
+      
+      // Poi applica solo gli ordini da Firebase
+      applyParsedData(data, true); // true = da Firebase, non caricare impostazioni
+      renderTables();
+      renderSavedButtons();
+      isUpdatingFromFirebase = false;
+    } else {
+      console.log("📤 Nessun dato su Firebase, carico da localStorage");
+      loadData();
+      // Se c'è qualcosa in localStorage, sincronizza su Firebase
+      const localData = localStorage.getItem('breakOrdersState');
+      if(localData){
+        saveData();
+      }
+    }
+  }).catch((error) => {
+    console.error("❌ Errore caricamento Firebase:", error);
+    console.log("📂 Fallback a localStorage");
+    loadData();
+  });
 }
 
 /* catalogo */
@@ -372,7 +510,10 @@ function renderTables(){
     if(idx !== -1){
       const b = document.createElement('button');
       b.className = "table-btn";
-      b.textContent = `TAV-${i}`;
+      // Aggiungi classe has-orders se il tavolo ha ordini o ordini salvati
+      const tableName = `TAV-${i}`;
+      // Rimuovo il comportamento rosso dai tavoli
+      b.textContent = tableName;
       b.onclick = ()=> openForTable(idx);
       row1.appendChild(b);
     }
@@ -387,7 +528,9 @@ function renderTables(){
     if(idx !== -1){
       const b = document.createElement('button');
       b.className = "table-btn";
-      b.textContent = `TAV-${i}`;
+      const tableName = `TAV-${i}`;
+      // Rimuovo il comportamento rosso dai tavoli
+      b.textContent = tableName;
       b.onclick = ()=> openForTable(idx);
       row2.appendChild(b);
     }
@@ -402,7 +545,9 @@ function renderTables(){
     if(idx !== -1){
       const b = document.createElement('button');
       b.className = "table-btn";
-      b.textContent = `TAV-${i}`;
+      const tableName = `TAV-${i}`;
+      // Rimuovo il comportamento rosso dai tavoli
+      b.textContent = tableName;
       b.onclick = ()=> openForTable(idx);
       row3.appendChild(b);
     }
@@ -417,6 +562,7 @@ function renderTables(){
   if(bancoIdx !== -1){
     const b = document.createElement('button');
     b.className = "table-btn";
+    // Rimuovo il comportamento rosso dai tavoli
     b.textContent = "BANCO";
     b.onclick = ()=> openForTable(bancoIdx);
     row4.appendChild(b);
@@ -426,6 +572,7 @@ function renderTables(){
   if(salaIdx !== -1){
     const b = document.createElement('button');
     b.className = "table-btn";
+    // Rimuovo il comportamento rosso dai tavoli
     b.textContent = "SALA";
     b.onclick = ()=> openForTable(salaIdx);
     row4.appendChild(b);
@@ -435,6 +582,7 @@ function renderTables(){
   if(salafIdx !== -1){
     const b = document.createElement('button');
     b.className = "table-btn";
+    // Rimuovo il comportamento rosso dai tavoli
     b.textContent = "SALAF";
     b.onclick = ()=> openForTable(salafIdx);
     row4.appendChild(b);
@@ -442,6 +590,7 @@ function renderTables(){
   
   const plusBtn = document.createElement('button');
   plusBtn.className = "table-btn";
+  // Rimuovo il comportamento rosso dal tasto +
   plusBtn.textContent = "+";
   plusBtn.onclick = ()=> openCustomTablesPopup();
   row4.appendChild(plusBtn);
@@ -455,6 +604,10 @@ function renderSavedButtons(){
   savedOrders.forEach(s=>{
     const b = document.createElement('button');
     b.className = "table-btn";
+    // Diventa rosso se ha prodotti e non è stato consegnato
+    if(s.items && s.items.length > 0 && !s.consegnato) {
+      b.classList.add('has-orders');
+    }
     b.textContent = s.tableName;
     
     let pressTimer;
@@ -516,6 +669,7 @@ function openCustomTablesPopup(){
   
   // Nascondi gli elementi normali del popup
   leftColumnDiv.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
@@ -697,6 +851,7 @@ function openForTable(tableIndex){
   currentTarget = {type:'saved', id: existingOrder.id};
   popupTitle.textContent = tableName;
   leftColumnDiv.style.display = 'grid';
+  if(categoriesDiv) categoriesDiv.style.display = 'grid';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   renderOrderList();
@@ -709,6 +864,7 @@ function openForSaved(savedId){
   currentTarget = {type:'saved', id: savedId};
   popupTitle.textContent = saved.tableName;
   leftColumnDiv.style.display = 'grid';
+  if(categoriesDiv) categoriesDiv.style.display = 'grid';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   renderOrderList();
@@ -757,12 +913,35 @@ function renderActionsForTable(){
     openAccontoPopup();
   };
 
+  const consegnatoBtn = document.createElement('button');
+  consegnatoBtn.textContent = "Done";
+  consegnatoBtn.onclick = ()=> {
+    // Marca come consegnato e chiudi popup
+    const items = getEditingItems();
+    if(!items || items.length === 0) {
+      closePopup();
+      return;
+    }
+    
+    // Trova l'ordine salvato corrispondente e marcalo come consegnato
+    const saved = savedOrders.find(s => s.tableName === tableNames[currentTarget.id]);
+    if(saved) {
+      saved.consegnato = true;
+      saved.timestampDone = Date.now();
+      saveData();
+      renderTables();
+      renderSavedButtons();
+    }
+    closePopup();
+  };
+
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = closePopup;
 
   actionsDiv.appendChild(payBtn);
   actionsDiv.appendChild(accontoBtn);
+  actionsDiv.appendChild(consegnatoBtn);
   actionsDiv.appendChild(closeBtn);
 }
 
@@ -777,20 +956,46 @@ function renderActionsForSaved(){
       paySavedOrder(currentTarget.id);
     });
   };
+  
   const accontoBtn = document.createElement('button');
   accontoBtn.textContent = "Acconto";
   accontoBtn.onclick = ()=> { openAccontoPopup(); };
+  
+  const consegnatoBtn = document.createElement('button');
+  consegnatoBtn.textContent = "Done";
+  consegnatoBtn.onclick = ()=> {
+    // Marca come consegnato e chiudi popup
+    const items = getEditingItems();
+    if(!items || items.length === 0) {
+      closePopup();
+      return;
+    }
+    
+    const saved = savedOrders.find(s => s.id === currentTarget.id);
+    if(saved) {
+      saved.consegnato = true;
+      saved.timestampDone = Date.now();
+      saveData();
+      renderTables();
+      renderSavedButtons();
+    }
+    closePopup();
+  };
+  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = closePopup;
+  
   actionsDiv.appendChild(payBtn);
   actionsDiv.appendChild(accontoBtn);
+  actionsDiv.appendChild(consegnatoBtn);
   actionsDiv.appendChild(closeBtn);
 }
 
 /* Popup Acconto */
 function openAccontoPopup(){
   leftColumnDiv.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
@@ -1039,9 +1244,20 @@ function getEditingItems(){
 /* aggiungi prodotto */
 function addCatalogProduct(name, price){
   const items = getEditingItems();
-  items.push({name, qty:1, price: typeof price === 'number' ? price : 0});
+  const newItem = {name, qty:1, price: typeof price === 'number' ? price : 0, timestamp: Date.now()};
+  items.push(newItem);
+  
+  // Se è un ordine salvato, marca come non consegnato quando aggiungi prodotti
+  if(currentTarget.type === 'saved'){
+    const saved = savedOrders.find(s => s.id === currentTarget.id);
+    if(saved) {
+      saved.consegnato = false;
+    }
+  }
+  
   renderOrderList();
   saveData();
+  renderSavedButtons();
 }
 
 /* modificatori */
@@ -1060,9 +1276,22 @@ function renderOrderList(){
   orderList.innerHTML = "";
   const items = getEditingItems();
   let total = 0;
+  // Trova il timestamp dell'ultimo Done
+  let timestampDone = null;
+  if(currentTarget.type === 'saved'){
+    const saved = savedOrders.find(s => s.id === currentTarget.id);
+    if(saved) timestampDone = saved.timestampDone;
+  }
+  
   (items || []).forEach((it, i)=>{
     const row = document.createElement('div');
     row.className = "order-row";
+    
+    // Bordo rosso se il prodotto è stato aggiunto dopo l'ultimo Done
+    if(timestampDone && it.timestamp && it.timestamp > timestampDone){
+      row.style.border = "2px solid #ff0000";
+      row.style.boxShadow = "0 0 10px rgba(255,0,0,0.5)";
+    }
     
     // Colora la riga in base alla categoria
     const cat = detectCategory(it.name);
@@ -1266,6 +1495,7 @@ function paySavedOrder(savedId){
 function openTotals(){
   currentTarget = {type:null, id:null};
   leftColumnDiv.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
@@ -1331,6 +1561,7 @@ function openTotals(){
 function openEvasi(){
   currentTarget = {type:null, id:null};
   leftColumnDiv.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
@@ -1459,7 +1690,7 @@ function openEvasi(){
 
 function exportEvasiToCSV(){
   try {
-    let csv = "Data;Tavolo;Prodotto;Quantità;Prezzo Unitario;Totale\n";
+    let csv = "Data;Tavolo;Categoria;Prodotto;Quantità;Prezzo Unitario;Totale\n";
     
     evasiOrders.forEach(order => {
       const dateStr = order.dateLabel || order.timestamp || "";
@@ -1467,7 +1698,8 @@ function exportEvasiToCSV(){
         const qty = item.qty || 1;
         const price = item.price || 0;
         const total = qty * price;
-        csv += `"${dateStr}";"${order.tableName}";"${item.name}";${qty};${price.toFixed(2).replace('.', ',')};${total.toFixed(2).replace('.', ',')}\n`;
+        const cat = (detectCategory(item.name) || "").toUpperCase();
+        csv += `"${dateStr}";"${order.tableName}";"${cat}";"${item.name}";${qty};${price.toFixed(2).replace('.', ',')};${total.toFixed(2).replace('.', ',')}\n`;
       });
     });
     
@@ -1478,7 +1710,7 @@ function exportEvasiToCSV(){
       }, 0);
     }, 0);
     
-    csv += `\n"TOTALE COMPLESSIVO";"";"";"";"";
+    csv += `\n"TOTALE COMPLESSIVO";"";"";"";"";"";
 ${totalComplessivo.toFixed(2).replace('.', ',')}\n`;
     
     // Prova invio a Kodular / AppInventor
@@ -1490,8 +1722,8 @@ ${totalComplessivo.toFixed(2).replace('.', ',')}\n`;
       return;
     }
     
-    // Invia via email
-    sendCSVByEmail(csv, 'Ordini Evasi Break BC', 'evasi');
+    // Scarica il file CSV
+    downloadCSV(csv, 'evasi');
     
   } catch(e) {
     console.error("Errore exportEvasiToCSV:", e);
@@ -1513,6 +1745,7 @@ function applyBackground(){
 function openSettings(){
   currentTarget = {type:null, id:null};
   leftColumnDiv.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
@@ -1597,7 +1830,8 @@ function openBackgroundSettings(){
     {name: "18", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmttb2VrZmNvdDVqN3EwNjlpb2oxdDAyMXpib3I2b3N2cHRkaGZ4bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jTAmP5GWEZpQ8ZZyF1/giphy.gif"},
     {name: "19", url: "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGpwdGVjbzc5eHYweDd4ZDBnODRlMTVtdDczajVmcjZzYmdheTN0YiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l5JbspfwZ0yjHjlJ0K/giphy.gif"},
     {name: "20", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExN25yZ3d4bXJ6NGV3bmozYnF0N3pkZWRtZ3E4enl2dGp3djM3bmhoMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jaOXKCxtBPLieRLI0c/giphy.gif"},
-    {name: "21", url: "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnA3Z2UwNHBxMDJ1cTJ4eWw0YjBwYTEwNHJlaGR6YjA4ZHo5cDdrZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ui1VQlTo0FvHrdwJD7/giphy.gif"}
+    {name: "21", url: "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnA3Z2UwNHBxMDJ1cTJ4eWw0YjBwYTEwNHJlaGR6YjA4ZHo5cDdrZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ui1VQlTo0FvHrdwJD7/giphy.gif"},
+    {name: "22", url: "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmsza2lqNXB1b2t0dHJyN2RrZXpwNWVpNzdlbjdrajlxeWRjNHk0ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/uFmH8za4E6M5STIiTu/giphy.gif"}
   ];
 
   backgrounds.forEach(bg => {
@@ -2619,7 +2853,7 @@ function exportSingleHistoric(entry){
   rows.push(["TOTALE", ((entry.totale!==undefined)?entry.totale:Object.values(entry.totali||{}).reduce((a,b)=>a+b,0)).toFixed(2).replace('.', ',')]);
   const csv = rows.map(r=>r.join(";")).join("\n");
   const dateLabel = entry.dateLabel || entry.dateISO || new Date().toLocaleString();
-  sendCSVByEmail(csv, `Storico Break BC - ${dateLabel}`, 'storico');
+  downloadCSV(csv, 'storico');
 }
 
 /* helper detect category */
@@ -2650,9 +2884,13 @@ categoriesDiv.addEventListener('click', e=>{
 popup.addEventListener('click', e=>{ if(e.target === popup) closePopup(); });
 
 /* init */
-loadData();
-renderTables();
-renderSavedButtons();
+if(firebaseEnabled){
+  setupFirebaseSync();
+} else {
+  loadData();
+  renderTables();
+  renderSavedButtons();
+}
 
 // helper: prova a inviare il CSV a App Inventor (WebViewer)
 function sendCsvToAppInventor(csv) {
@@ -2671,10 +2909,13 @@ function sendCsvToAppInventor(csv) {
 // genera ed esporta il CSV (fallback download + invio a AppInventor)
 function exportTotalsToCSV() {
   try {
-    // 1️⃣ Genera CSV
+    // 1️⃣ Genera CSV con ordine categorie: caffe, spina, frigo, super, snack, tempo, quote, cassa
     let csv = "Categoria;Totale (€)\n";
-    Object.keys(totals).forEach(k => {
-      csv += `${k.toUpperCase()};${totals[k].toFixed(2).replace('.', ',')}\n`;
+    const categoriesOrder = ['caffe', 'spina', 'frigo', 'super', 'snack', 'tempo', 'quote', 'cassa'];
+    categoriesOrder.forEach(k => {
+      if(totals[k] !== undefined) {
+        csv += `${k.toUpperCase()};${totals[k].toFixed(2).replace('.', ',')}\n`;
+      }
     });
     const totaleCompl = Object.values(totals).reduce((a,b)=>a+b,0).toFixed(2).replace('.', ',');
     csv += `TOTALE COMPLESSIVO;${totaleCompl}\n`;
@@ -2688,16 +2929,16 @@ function exportTotalsToCSV() {
       return;
     }
 
-    // 3️⃣ Invia via email
-    sendCSVByEmail(csv, 'Totali Break BC', 'totali');
+    // 3️⃣ Scarica il file CSV
+    downloadCSV(csv, 'totali');
 
   } catch(e) {
     console.error("Errore exportTotalsToCSV:", e);
   }
 }
 
-/* Funzione per inviare CSV via email */
-function sendCSVByEmail(csvContent, subject, tipo) {
+/* Funzione per scaricare CSV in locale */
+function downloadCSV(csvContent, tipo) {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g,'-');
     const filename = `${tipo}_${timestamp}.csv`;
@@ -2705,81 +2946,19 @@ function sendCSVByEmail(csvContent, subject, tipo) {
     // Crea il blob CSV
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     
-    // Controlla se siamo in un'app Android con interfaccia nativa
-    if (window.Android && typeof window.Android.sendEmailWithAttachment === 'function') {
-      // Usa l'interfaccia Android nativa per inviare email con allegato
-      const base64 = blobToBase64(blob, (base64Data) => {
-        window.Android.sendEmailWithAttachment(
-          'regbreakbc@gmail.com',
-          subject + ' - ' + timestamp,
-          'In allegato i dati esportati da Break Orders.',
-          base64Data,
-          filename
-        );
-      });
-      return;
-    }
+    // Scarica il file
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    // Controlla se il browser supporta Web Share API con file
-    if (navigator.share && navigator.canShare) {
-      const file = new File([blob], filename, { type: 'text/csv' });
-      const shareData = {
-        files: [file],
-        title: subject,
-        text: 'Dati esportati da Break Orders'
-      };
-      
-      if (navigator.canShare(shareData)) {
-        navigator.share(shareData)
-          .then(() => console.log('File condiviso con successo'))
-          .catch(err => {
-            console.error('Errore condivisione:', err);
-            fallbackDownload(blob, filename);
-          });
-        return;
-      }
-    }
-    
-    // Fallback: scarica il file e apri email
-    fallbackDownload(blob, filename);
-    
-    // Apri client email con istruzioni
-    setTimeout(() => {
-      const emailTo = 'regbreakbc@gmail.com';
-      const emailSubject = encodeURIComponent(subject + ' - ' + timestamp);
-      const emailBody = encodeURIComponent(
-        'File CSV scaricato: ' + filename + '\n\n' +
-        'Allega manualmente il file scaricato a questa email.\n\n' +
-        '---\nBreak Orders'
-      );
-      window.location.href = `mailto:${emailTo}?subject=${emailSubject}&body=${emailBody}`;
-    }, 1000);
-    
+    console.log('✅ File CSV scaricato:', filename);
   } catch(e) {
-    console.error('Errore invio email:', e);
-    alert('Errore nell\'invio. Il file è stato scaricato.');
+    console.error('❌ Errore download CSV:', e);
+    alert('Errore nel download del file.');
   }
-}
-
-// Funzione helper per scaricare il file
-function fallbackDownload(blob, filename) {
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  alert('File CSV scaricato: ' + filename + '\nAllega il file all\'email che si aprirà.');
-}
-
-// Funzione helper per convertire blob in base64
-function blobToBase64(blob, callback) {
-  const reader = new FileReader();
-  reader.onloadend = function() {
-    const base64 = reader.result.split(',')[1];
-    callback(base64);
-  };
-  reader.readAsDataURL(blob);
 }
 
 /* Nascondi barra indirizzi e disabilita zoom */
