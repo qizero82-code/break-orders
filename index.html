@@ -49,6 +49,7 @@
   .tables-container{display:flex;flex-direction:column;gap:0.5vh}
   .utility-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
   .tables-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
+  .tables-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:0.5vw}
   button.table-btn{background:#000 !important;color:#fff !important;border-radius:8px !important;padding:1.5vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 20px) !important;font-weight:700 !important;min-height:auto !important;box-sizing:border-box !important;line-height:1.2 !important}
   button.table-btn.has-orders{background:#cc0000 !important}
   .utility-btn{padding:1.2vh 0.3vw;font-size:clamp(9px, 2vw, 14px);line-height:1.2}
@@ -275,6 +276,7 @@ let currentTarget = {type:null, id:null};
 let accontoMode = false;
 let storico = [];
 let evasiOrders = []; // ordini pagati che possono essere ripristinati
+let refillList = {}; // {productName: quantity} - lista prodotti refill
 let currentBackground = "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4";
 let currentFont = "Arial, Helvetica, sans-serif";
 let currentFontSize = 16; // dimensione base in px
@@ -293,7 +295,7 @@ let subcategories = {
   "SPRITZ": [{name:"LISCIO",price:2.50},{name:"APEROL",price:3.00},{name:"CAMPARI",price:3.00},{name:"CYNAR",price:3.00}],
   "AMARO": [{name:"MONTENEGRO",price:3.00},{name:"JAGERMEISTER",price:3.00},{name:"CAPO",price:3.00},{name:"BRAULIO",price:3.00},{name:"BRANCAMENTA",price:3.00},{name:"PETRUS",price:3.00}],
   "GRAPPA": [{name:"BIANCA",price:3.00},{name:"24k",price:3.00},{name:"MIELE",price:3.00},{name:"CAMOMILLA",price:3.00},{name:"PRUGNA",price:3.00},{name:"MIRTILLO",price:3.00}],
-  "COCKTAILS": [{name:"GIN TONIC",price:6.00},{name:"GIN TONIC H",price:8.00},{name:"GIN LEMON",price:6.00},{name:"GIN LEMON H",price:8.00},{name:"JACK COLA",price:8.00},{name:"RUM COLA",price:6.60},{name:"VODKA TONIC",price:6.00},{name:"JAGERBOMB",price:8.00},{name:"VODKA LEMON",price:6.00},{name:"AMERICANO",price:4.00}]
+  "COCKTAILS": [{name:"GIN TONIC",price:6.00},{name:"GIN TONIC H",price:8.00},{name:"GIN LEMON",price:6.00},{name:"GIN LEMON H",price:8.00},{name:"JACK COLA",price:8.00},{name:"RUM COLA",price:6.00},{name:"VODKA TONIC",price:6.00},{name:"JAGERBOMB",price:6.00},{name:"VODKA LEMON",price:6.00},{name:"AMERICANO",price:4.00}]
 };
 
 const tablesContainer = document.getElementById('tables-container');
@@ -324,12 +326,13 @@ function saveData(){
       totals, 
       storico, 
       evasiOrders,
+      refillList,
       tableNames
     };
     
     // Dati completi da salvare in localStorage (ordini + impostazioni)
     const localData = {
-      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, 
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList,
       currentBackground, currentFont, currentFontSize, fontSettings, 
       modifiersList, subcategories
     };
@@ -380,6 +383,14 @@ function applyParsedData(parsed, fromFirebase = false){
   if(!totals.cassa) totals.cassa = 0;
   storico = parsed.storico || parsed.storicoList || [];
   evasiOrders = parsed.evasiOrders || [];
+  
+  // RefillList: se arriva da Firebase e ha dati, usalo; altrimenti mantieni quello locale
+  if(parsed.refillList && Object.keys(parsed.refillList).length > 0){
+    refillList = parsed.refillList;
+  } else if(!fromFirebase){
+    refillList = parsed.refillList || {};
+  }
+  // Se fromFirebase è true e refillList è vuoto, non fare nulla (mantieni quello locale)
   
   // Sincronizza tableNames da Firebase
   if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
@@ -595,6 +606,13 @@ function renderTables(){
   plusBtn.onclick = ()=> openCustomTablesPopup();
   row4.appendChild(plusBtn);
   
+  const refillBtn = document.createElement('button');
+  refillBtn.className = "table-btn";
+  refillBtn.textContent = "REFILL";
+  refillBtn.style.background = "#0099ff !important"; // Colore blu come categoria FRIGO
+  refillBtn.onclick = ()=> openRefillPopup();
+  row4.appendChild(refillBtn);
+  
   container.appendChild(row4);
 }
 
@@ -656,6 +674,107 @@ function renderSavedButtons(){
     });
     
     savedOrdersDiv.appendChild(b);
+  });
+}
+
+/* Popup Refill */
+function openRefillPopup(){
+  currentTarget = {type:null, id:null};
+  leftColumnDiv.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  popupTitle.textContent = "REFILL - Prodotti Frigo";
+  
+  // Renderizza la lista prodotti FRIGO
+  renderRefillList();
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = "Reset";
+  resetBtn.style.background = "#aa0000";
+  resetBtn.onclick = ()=> {
+    showConfirm('Confermi il reset della lista refill?', ()=>{
+      refillList = {};
+      saveData();
+      renderRefillList();
+    }, 'Reset Refill');
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  
+  actionsDiv.appendChild(resetBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  popup.style.display = 'flex';
+}
+
+function updateRefillFromItems(items){
+  // Aumenta i prodotti FRIGO nella lista refill quando vengono pagati/consegnati
+  if(!items || items.length === 0) return;
+  
+  items.forEach(item => {
+    // Rimuovi modificatori dal nome del prodotto (SR, M, K, S, GH)
+    let productName = item.name;
+    modifiersList.forEach(mod => {
+      productName = productName.replace(new RegExp('\\s+' + mod + '$'), '');
+    });
+    
+    // Verifica se il prodotto è nella categoria FRIGO
+    const frigoProducts = CATALOG.c3 || [];
+    const isFrigoProduct = frigoProducts.some(p => p.name === productName);
+    
+    console.log('Checking item:', item.name, '-> Clean name:', productName, 'Is FRIGO?', isFrigoProduct, 'Qty:', item.qty);
+    
+    if(isFrigoProduct){
+      if(!refillList[productName]) refillList[productName] = 0;
+      refillList[productName] += (item.qty || 1);
+      console.log('Updated refillList:', productName, '=', refillList[productName]);
+    }
+  });
+  saveData();
+}
+
+function renderRefillList(){
+  orderList.innerHTML = "";
+  
+  // Mostra TUTTI i prodotti FRIGO dal catalogo
+  const frigoProducts = CATALOG.c3 || [];
+  
+  frigoProducts.forEach(product => {
+    const qty = refillList[product.name] || 0;
+    
+    const row = document.createElement('div');
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "3fr 1fr";
+    row.style.gap = "10px";
+    row.style.alignItems = "center";
+    row.style.padding = "12px";
+    row.style.borderBottom = "1px solid #444";
+    row.style.background = "#0099ff";
+    row.style.borderRadius = "6px";
+    row.style.marginBottom = "8px";
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = product.name;
+    nameDiv.style.fontSize = "18px";
+    nameDiv.style.fontWeight = "700";
+    
+    const qtyDiv = document.createElement('div');
+    qtyDiv.textContent = qty;
+    qtyDiv.style.fontSize = "20px";
+    qtyDiv.style.fontWeight = "700";
+    qtyDiv.style.textAlign = "center";
+    
+    row.appendChild(nameDiv);
+    row.appendChild(qtyDiv);
+    
+    orderList.appendChild(row);
   });
 }
 
@@ -899,6 +1018,8 @@ function renderActionsForTable(){
           totals[cat] += (it.price || 0) * (it.qty || 1);
         }
       });
+      // Aggiorna lista refill con prodotti FRIGO
+      updateRefillFromItems(items);
       // Svuota il tavolo dopo il pagamento
       tableOrders[currentTarget.id] = [];
       renderOrderList();
@@ -922,6 +1043,9 @@ function renderActionsForTable(){
       closePopup();
       return;
     }
+    
+    // Aggiorna lista refill con prodotti FRIGO
+    updateRefillFromItems(items);
     
     // Trova l'ordine salvato corrispondente e marcalo come consegnato
     const saved = savedOrders.find(s => s.tableName === tableNames[currentTarget.id]);
@@ -970,6 +1094,9 @@ function renderActionsForSaved(){
       closePopup();
       return;
     }
+    
+    // Aggiorna lista refill con prodotti FRIGO
+    updateRefillFromItems(items);
     
     const saved = savedOrders.find(s => s.id === currentTarget.id);
     if(saved) {
@@ -1087,8 +1214,10 @@ function openAccontoPopup(){
     });
     
     showConfirm(`Totale: €${totalAcconto.toFixed(2)}`, ()=>{
+      const paidItems = [];
       selectedIndexes.forEach(idx => {
         const item = items[idx];
+        paidItems.push(JSON.parse(JSON.stringify(item)));
         const cat = detectCategory(item.name);
         if(cat && totals[cat] !== undefined){
           totals[cat] += (item.price || 0) * (item.qty || 1);
@@ -1107,6 +1236,9 @@ function openAccontoPopup(){
         
         items.splice(idx, 1);
       });
+      
+      // Aggiorna lista refill con prodotti FRIGO pagati
+      updateRefillFromItems(paidItems);
       
       saveData();
       
@@ -1485,6 +1617,8 @@ function paySavedOrder(savedId){
       totals[cat] += (it.price || 0) * (it.qty || 1);
     }
   });
+  // Aggiorna lista refill con prodotti FRIGO
+  updateRefillFromItems(saved.items);
   savedOrders.splice(idx,1);
   renderSavedButtons();
   closePopup();
