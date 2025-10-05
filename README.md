@@ -61,10 +61,10 @@ git push -u origin main
 7. Configura le opzioni:
    - **Package ID**: `com.breakbilliard.orders`
    - **App name**: `Break Orders`
-   - **Version**: `7.0.0`
+   - **Version**: `8.0.0`
 8. Clicca **"Generate"** e scarica l'APK
 
-## ✨ Caratteristiche v7.0
+## ✨ Caratteristiche v8.0
 
 ### Gestione Ordini
 - ✅ Gestione ordini per tavoli multipli
@@ -83,8 +83,8 @@ git push -u origin main
 - ✅ **Layout verticale ottimizzato per tablet**
 - ✅ Schermo intero (100vw x 100vh)
 - ✅ Sottocategorie a 2 colonne
-- ✅ Modificatori in 1 riga da 5 tasti
-- ✅ Ordini a schermo intero
+- ✅ Modificatori in 1 riga da 5 tasti sempre in alto
+- ✅ Ordini espandibili a schermo intero
 
 ### Funzionalità Avanzate
 - ✅ **Sincronizzazione Firebase in tempo reale**
@@ -107,14 +107,13 @@ Se vuoi usare la sincronizzazione in tempo reale tra dispositivi, vedi `FIREBASE
 
 L'app funziona anche senza Firebase usando solo localStorage locale.
 
-## 📋 Changelog v7.0
+## 📋 Changelog v8.0
 
-- **Layout verticale completo** - Ottimizzato per tablet
-- **Sottocategorie a 2 colonne** - Più spazio e leggibilità
-- **Modificatori in 1 riga da 5** - Sempre visibili
-- **Fix popup conferma refill** - Z-index corretto
-- **Gestione visibilità elementi** - Categorie/modificatori nascosti dove non servono
-- **Ottimizzazione spazio** - Tabelle iniziano subito dopo azioni
+- **Posizionamento elementi ottimizzato** - Modificatori e ordini sempre in alto
+- **Sottocategorie compatte** - Occupano solo lo spazio necessario
+- **Ordini espandibili** - Prendono tutto lo spazio rimanente
+- **Fix layout verticale** - Elementi sempre nel primo spazio disponibile
+- **Gestione visibilità migliorata** - Categorie/modificatori/sottocategorie nascosti dove non servono
 
 ## 📞 Supporto
 
@@ -122,6 +121,6 @@ Per problemi o richieste: https://github.com/qizero82-code/break-orders/issues
 
 ---
 
-**Versione**: 7.0.0  
+**Versione**: 8.0.0  
 **Data**: Ottobre 2025  
 **Autore**: Break Billiard Club
