@@ -61,10 +61,10 @@ git push -u origin main
 7. Configura le opzioni:
    - **Package ID**: `com.breakbilliard.orders`
    - **App name**: `Break Orders`
-   - **Version**: `8.0.0`
+   - **Version**: `9.0.0`
 8. Clicca **"Generate"** e scarica l'APK
 
-## ✨ Caratteristiche v8.0
+## ✨ Caratteristiche v9.0
 
 ### Gestione Ordini
 - ✅ Gestione ordini per tavoli multipli
@@ -72,6 +72,8 @@ git push -u origin main
 - ✅ Ordini salvati con stato "Consegnato"
 - ✅ Acconto parziale su ordini
 - ✅ Storico completo ordini
+- ✅ **Lista ordini invertita** - Totale in alto, ordini dal più recente
+- ✅ **Separatore "CONSEGNATO"** - Divide ordini nuovi da quelli già consegnati
 
 ### Prodotti e Categorie
 - ✅ 8 categorie (Caffè, Spina, Frigo, Super, Snack, Tempo, Quote, Cassa)
@@ -81,9 +83,11 @@ git push -u origin main
 
 ### Layout e UI
 - ✅ **Layout verticale ottimizzato per tablet**
-- ✅ Schermo intero (100vw x 100vh)
+- ✅ **Popup ordini 90%** - Larghezza e altezza al 90% con bordo
+- ✅ **Ordini salvati a griglia 4x4** - Tutta la larghezza dello schermo
 - ✅ Sottocategorie a 2 colonne
 - ✅ Modificatori in 1 riga da 5 tasti sempre in alto
+- ✅ **Tempo/Cassa pad 90%** - Centrati e ben visibili
 - ✅ Ordini espandibili a schermo intero
 
 ### Funzionalità Avanzate
@@ -93,6 +97,7 @@ git push -u origin main
 - ✅ Totali per categoria
 - ✅ Ordini evasi recuperabili
 - ✅ Funzionalità offline (Service Worker)
+- ✅ **Divisione tempo con input vuoto** - Placeholder suggerisce "2"
 
 ### Personalizzazione
 - ✅ Font personalizzabili per ogni sezione
@@ -107,13 +112,15 @@ Se vuoi usare la sincronizzazione in tempo reale tra dispositivi, vedi `FIREBASE
 
 L'app funziona anche senza Firebase usando solo localStorage locale.
 
-## 📋 Changelog v8.0
+## 📋 Changelog v9.0
 
-- **Posizionamento elementi ottimizzato** - Modificatori e ordini sempre in alto
-- **Sottocategorie compatte** - Occupano solo lo spazio necessario
-- **Ordini espandibili** - Prendono tutto lo spazio rimanente
-- **Fix layout verticale** - Elementi sempre nel primo spazio disponibile
-- **Gestione visibilità migliorata** - Categorie/modificatori/sottocategorie nascosti dove non servono
+- **Ordini salvati a griglia 4x4** - Tutta la larghezza dello schermo
+- **Popup ordini 90%** - Dimensioni ottimizzate con bordo visibile
+- **Lista ordini invertita** - Totale in alto, ordini più recenti per primi
+- **Separatore "CONSEGNATO"** - Divide visivamente ordini nuovi da vecchi
+- **Tempo/Cassa pad 90%** - Centrati e ben dimensionati
+- **Input divisione tempo vuoto** - Campo vuoto con placeholder "2"
+- **Fix layout e posizionamento** - Tutti gli elementi perfettamente allineati
 
 ## 📞 Supporto
 
@@ -121,6 +128,6 @@ Per problemi o richieste: https://github.com/qizero82-code/break-orders/issues
 
 ---
 
-**Versione**: 8.0.0  
+**Versione**: 9.0.0  
 **Data**: Ottobre 2025  
 **Autore**: Break Billiard Club

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'break-orders-v8';
+const CACHE_NAME = 'break-orders-v9';
 const urlsToCache = [
   './',
   './index.html',
