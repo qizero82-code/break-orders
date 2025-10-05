@@ -1,52 +1,127 @@
 # Break Orders - PWA
 
-Sistema di gestione ordini per Break Billiard Club
+Sistema di gestione ordini per Break Billiard Club con sincronizzazione Firebase in tempo reale.
 
-## File necessari per PWABuilder
+## 📦 File necessari per PWABuilder
 
 Tutti i file in questa cartella sono necessari per creare l'APK:
 
-- `index.html` - Applicazione principale
-- `manifest.json` - Manifest PWA
-- `service-worker.js` - Service Worker per funzionalità offline
-- `icon-192.png` - Icona 192x192
-- `icon-512.png` - Icona 512x512
+- **`index.html`** - Applicazione principale
+- **`manifest.json`** - Manifest PWA
+- **`service-worker.js`** - Service Worker per funzionalità offline
+- **`icon-192.png`** - Icona 192x192
+- **`icon-512.png`** - Icona 512x512
+- **`.gitignore`** - File da escludere dal repository
 
-## Come caricare su GitHub
+## 🚀 Come caricare su GitHub
+
+### Opzione 1: Via Web Interface
 
 1. Vai su https://github.com/qizero82-code/break-orders
-2. Carica tutti i file (index.html, manifest.json, service-worker.js, icon-192.png, icon-512.png)
-3. Assicurati che i file siano nella root del repository
+2. Clicca su "Add file" → "Upload files"
+3. Trascina i seguenti file:
+   - `index.html`
+   - `manifest.json`
+   - `service-worker.js`
+   - `icon-192.png`
+   - `icon-512.png`
+   - `.gitignore`
+4. Scrivi un messaggio di commit (es. "Update v7 - Layout verticale")
+5. Clicca "Commit changes"
 
-## Come creare l'APK con PWABuilder
+### Opzione 2: Via Git Command Line
 
-1. Vai su https://www.pwabuilder.com/
-2. Inserisci l'URL del tuo GitHub Pages: `https://qizero82-code.github.io/break-orders/`
-3. Clicca su "Start"
-4. PWABuilder analizzerà la tua PWA
-5. Clicca su "Package for Stores"
-6. Seleziona "Android" e scarica l'APK
+```bash
+cd /path/to/PWAbuilder
+git init
+git add index.html manifest.json service-worker.js icon-192.png icon-512.png .gitignore
+git commit -m "Update v7 - Layout verticale"
+git branch -M main
+git remote add origin https://github.com/qizero82-code/break-orders.git
+git push -u origin main
+```
 
-## Abilitare GitHub Pages
+## 🌐 Abilitare GitHub Pages
 
 1. Vai su https://github.com/qizero82-code/break-orders/settings/pages
-2. In "Source" seleziona "main" branch
-3. Clicca "Save"
-4. Dopo qualche minuto il sito sarà disponibile su https://qizero82-code.github.io/break-orders/
+2. In **"Source"** seleziona **"Deploy from a branch"**
+3. Seleziona branch **"main"** e cartella **"/ (root)"**
+4. Clicca **"Save"**
+5. Dopo 1-2 minuti il sito sarà disponibile su:
+   - **https://qizero82-code.github.io/break-orders/**
 
-## Caratteristiche
+## 📱 Come creare l'APK con PWABuilder
 
-- ✅ Gestione ordini per tavoli
-- ✅ Tavoli personalizzati
-- ✅ Categorie e sottocategorie prodotti
-- ✅ Modificatori ordini
-- ✅ Storico ordini
+1. Vai su **https://www.pwabuilder.com/**
+2. Inserisci l'URL: `https://qizero82-code.github.io/break-orders/`
+3. Clicca **"Start"**
+4. PWABuilder analizzerà la tua PWA (attendi il completamento)
+5. Clicca **"Package for Stores"**
+6. Seleziona **"Android"**
+7. Configura le opzioni:
+   - **Package ID**: `com.breakbilliard.orders`
+   - **App name**: `Break Orders`
+   - **Version**: `7.0.0`
+8. Clicca **"Generate"** e scarica l'APK
+
+## ✨ Caratteristiche v7.0
+
+### Gestione Ordini
+- ✅ Gestione ordini per tavoli multipli
+- ✅ Tavoli personalizzabili (nomi e numero)
+- ✅ Ordini salvati con stato "Consegnato"
+- ✅ Acconto parziale su ordini
+- ✅ Storico completo ordini
+
+### Prodotti e Categorie
+- ✅ 8 categorie (Caffè, Spina, Frigo, Super, Snack, Tempo, Quote, Cassa)
+- ✅ Sottocategorie personalizzabili
+- ✅ 5 modificatori (SR, M, K, S, GH)
+- ✅ Gestione prezzi dinamici
+
+### Layout e UI
+- ✅ **Layout verticale ottimizzato per tablet**
+- ✅ Schermo intero (100vw x 100vh)
+- ✅ Sottocategorie a 2 colonne
+- ✅ Modificatori in 1 riga da 5 tasti
+- ✅ Ordini a schermo intero
+
+### Funzionalità Avanzate
+- ✅ **Sincronizzazione Firebase in tempo reale**
+- ✅ Refill automatico prodotti frigo
+- ✅ Lista spesa basata su refill
 - ✅ Totali per categoria
-- ✅ Funzionalità offline
-- ✅ Personalizzazione font e dimensioni
+- ✅ Ordini evasi recuperabili
+- ✅ Funzionalità offline (Service Worker)
+
+### Personalizzazione
+- ✅ Font personalizzabili per ogni sezione
+- ✅ Dimensioni testo regolabili
+- ✅ Colori testo personalizzabili
 - ✅ Cambio sfondo
-- ✅ Fullscreen mode
+- ✅ Padding personalizzabile
 
-## Versione
+## 🔧 Configurazione Firebase (Opzionale)
 
-v3.0 - Completo con personalizzazione avanzata
+Se vuoi usare la sincronizzazione in tempo reale tra dispositivi, vedi `FIREBASE_SETUP.md`.
+
+L'app funziona anche senza Firebase usando solo localStorage locale.
+
+## 📋 Changelog v7.0
+
+- **Layout verticale completo** - Ottimizzato per tablet
+- **Sottocategorie a 2 colonne** - Più spazio e leggibilità
+- **Modificatori in 1 riga da 5** - Sempre visibili
+- **Fix popup conferma refill** - Z-index corretto
+- **Gestione visibilità elementi** - Categorie/modificatori nascosti dove non servono
+- **Ottimizzazione spazio** - Tabelle iniziano subito dopo azioni
+
+## 📞 Supporto
+
+Per problemi o richieste: https://github.com/qizero82-code/break-orders/issues
+
+---
+
+**Versione**: 7.0.0  
+**Data**: Ottobre 2025  
+**Autore**: Break Billiard Club

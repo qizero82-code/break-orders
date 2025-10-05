@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Cherry+Cream+Soda&family=Dokdo&family=Irish+Grover&family=Mountains+of+Christmas:wght@400;700&family=Permanent+Marker&family=Rampart+One&family=Rubik+Vinyl&family=Swanky+and+Moo+Moo&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Caveat+Brush&family=Cherry+Cream+Soda&family=Dokdo&family=DynaPuff:wght@400..700&family=Indie+Flower&family=Irish+Grover&family=Knewave&family=Mountains+of+Christmas:wght@400;700&family=Permanent+Marker&family=Rampart+One&family=Rubik+Vinyl&family=Swanky+and+Moo+Moo&display=swap" rel="stylesheet">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -54,23 +54,28 @@
   button.table-btn.has-orders{background:#cc0000 !important}
   .utility-btn{padding:1.2vh 0.3vw;font-size:clamp(9px, 2vw, 14px);line-height:1.2}
   .popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;overflow:hidden;z-index:4000}
+  .popup.fullscreen-popup{align-items:flex-start;justify-content:flex-start;background:#000}
   .popup-content{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
-background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin:0;box-sizing:border-box;color:#fff;border:none;overflow:hidden;display:flex;flex-direction:column}
+background-size:cover;padding:18px;border-radius:0;width:100vw;height:100vh;margin:0;box-sizing:border-box;color:#fff;border:none;overflow:hidden;display:flex;flex-direction:column}
+  .popup-content.fullscreen{width:100vw !important;height:100vh !important;padding:20px;border-radius:0;margin:0}
+  .popup-content.fullscreen .popup-main{display:block !important;grid-template-columns:1fr !important;overflow-y:auto !important;height:100% !important}
+  .popup-content.fullscreen .popup-column-left{display:none !important}
+  .popup-content.fullscreen .popup-column{background:transparent !important;padding:0 !important;overflow-y:auto !important;height:100% !important}
   .hidden{display:none}
   .popup-header{display:flex;flex-direction:column;gap:10px;margin-bottom:15px}
   .popup-header h3{margin:0;text-align:center;font-size:20px}
-  .popup-main{display:grid;grid-template-columns:1fr 1fr;gap:15px;flex:1;overflow:hidden}
-  .popup-column{display:flex;flex-direction:column;overflow-y:auto;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px}
-  .popup-column-left{display:grid;grid-template-rows:auto 1fr;gap:10px;overflow:hidden}
+  .popup-main{display:flex;flex-direction:column;gap:15px;flex:1;overflow:hidden}
+  .popup-column{display:flex;flex-direction:column;overflow-y:auto;background:transparent;padding:0;border-radius:0;flex:1}
+  .popup-column-left{display:flex;flex-direction:column;gap:10px;overflow:hidden}
   .categories-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .subcats-modifiers-wrapper{display:flex;flex-direction:column;gap:10px;overflow-y:auto;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px}
+  .subcats-modifiers-wrapper{display:flex;flex-direction:column;gap:10px;overflow-y:auto;background:transparent;padding:0;border-radius:0;flex:1}
   .column-title{font-size:14px;font-weight:700;margin-bottom:10px;text-align:center;color:#fff}
   #categories{display:contents}
-  #subcats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  #subcats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;flex:1;overflow-y:auto;align-content:start}
   .cat-btn,.subcat-btn{color:#fff;border:none;border-radius:8px;padding:20px;font-size:16px;font-weight:700;width:100%;text-align:center;background:#000}
   .back-btn{background:#555;color:#fff;border:none;border-radius:6px;padding:10px;margin:4px 0;font-size:14px;grid-column:span 2;cursor:pointer}
   .cat-caffe{background:#888}.cat-spina{background:#ff8800}.cat-frigo{background:#0099ff}.cat-super{background:#aaaa00}.cat-snack{background:#ff0000}.cat-tempo{background:var(--tempo-color)}.cat-quote{background:#0000ff}.cat-cassa{background:#000;color:#fff}
-  .modifiers{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px}
+  .modifiers{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:0}
   .modifiers button{background:#444;color:#fff;font-weight:700;padding:10px;border:none;border-radius:6px;cursor:pointer;width:100%}
   .list div{padding:6px;border-bottom:1px solid #666;cursor:pointer}
   #order-list{background:transparent;color:#fff;padding:0;border-radius:8px;flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -83,7 +88,7 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
   .order-name{text-align:left}
   .order-price{text-align:right;font-weight:bold}
   /* Popup conferma personalizzato */
-  #confirm-popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:5000}
+  #confirm-popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:10000}
   #confirm-popup.show{display:flex}
   .confirm-box{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center;background-size:cover;padding:24px;border-radius:10px;border:2px solid #444;color:#fff;text-align:center;width:90vw;max-width:500px}
   .confirm-box h3{margin:0 0 16px 0;font-size:20px}
@@ -102,15 +107,15 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
     .popup-header h3{text-align:center;font-size:18px}
     .actions{justify-content:center;margin-bottom:8px}
     .actions button{font-size:11px;padding:6px 10px}
-    .popup-main{grid-template-columns:1fr 1fr;gap:10px;overflow:hidden}
-    .popup-column{padding:8px;overflow-y:auto}
-    .popup-column-left{display:grid;grid-template-rows:1fr;overflow:hidden}
+    .popup-main{flex-direction:column;gap:10px;overflow:hidden}
+    .popup-column{padding:0;overflow-y:auto;flex:1}
+    .popup-column-left{display:flex;flex-direction:column;overflow:hidden}
     .column-title{font-size:12px;margin-bottom:6px}
     .categories-grid{grid-template-columns:repeat(4,1fr);gap:5px}
     #subcats{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
     .cat-btn,.subcat-btn{padding:8px 4px;font-size:11px}
-    .modifiers{flex-direction:row;flex-wrap:wrap;margin-top:6px}
-    .modifiers button{width:auto;flex:1;min-width:50px;padding:6px;font-size:11px}
+    .modifiers{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:0}
+    .modifiers button{width:100%;padding:6px;font-size:11px}
     #order-list{font-size:13px}
     .order-row{padding:5px 0;font-size:13px}
     .numpad button{font-size:14px;padding:10px}
@@ -163,39 +168,38 @@ background-size:cover;padding:18px;border-radius:0;width:90vw;height:90vh;margin
       </div>
       
       <div class="popup-main">
-        <!-- Colonna Sinistra: Categorie + Sottocategorie/Modificatori -->
-        <div class="popup-column-left">
-          <!-- Sottocategorie e Modificatori dalla metà in giù -->
-          <div class="subcats-modifiers-wrapper">
-            <div id="subcats" aria-live="polite"></div>
-            <div id="tempo-pad" class="hidden" aria-hidden="true">
-              <input id="tempo-display" class="tempo-display" readonly value="0" />
-              <div class="numpad" id="tempo-numpad">
-                <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
-                <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
-                <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
-                <button data-key=".">.</button><button data-key="0">0</button><button id="tempo-ok">OK</button>
-              </div>
-            </div>
-            <div id="cassa-pad" class="hidden" aria-hidden="true">
-              <input id="cassa-display" class="tempo-display" readonly value="0" style="background:#000;color:#fff;border:1px solid #fff" />
-              <div class="numpad" id="cassa-numpad" style="margin-bottom:10px">
-                <button data-key="7" style="background:#000;color:#fff">7</button><button data-key="8" style="background:#000;color:#fff">8</button><button data-key="9" style="background:#000;color:#fff">9</button>
-                <button data-key="4" style="background:#000;color:#fff">4</button><button data-key="5" style="background:#000;color:#fff">5</button><button data-key="6" style="background:#000;color:#fff">6</button>
-                <button data-key="1" style="background:#000;color:#fff">1</button><button data-key="2" style="background:#000;color:#fff">2</button><button data-key="3" style="background:#000;color:#fff">3</button>
-                <button data-key="." style="background:#000;color:#fff">.</button><button data-key="0" style="background:#000;color:#fff">0</button><button data-key="C" style="background:#aa0000;color:#fff">C</button>
-              </div>
-              <button id="cassa-entrata" style="background:#00aa00;color:#fff;width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:8px;margin-bottom:8px;cursor:pointer">ENTRATA</button>
-              <button id="cassa-uscita" style="background:#aa0000;color:#fff;width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:8px;cursor:pointer">USCITA</button>
-            </div>
-            <div class="modifiers" id="modifiers">
-              <button data-mod="SR">SR</button><button data-mod="M">M</button><button data-mod="K">K</button>
-              <button data-mod="S">S</button><button data-mod="GH">GH</button>
-            </div>
+        <!-- Sottocategorie a tutto schermo -->
+        <div id="subcats" aria-live="polite"></div>
+        
+        <!-- Tempo e Cassa pad -->
+        <div id="tempo-pad" class="hidden" aria-hidden="true">
+          <input id="tempo-display" class="tempo-display" readonly value="0" />
+          <div class="numpad" id="tempo-numpad">
+            <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+            <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+            <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+            <button data-key=".">.</button><button data-key="0">0</button><button id="tempo-ok">OK</button>
           </div>
         </div>
+        <div id="cassa-pad" class="hidden" aria-hidden="true">
+          <input id="cassa-display" class="tempo-display" readonly value="0" style="background:#000;color:#fff;border:1px solid #fff" />
+          <div class="numpad" id="cassa-numpad" style="margin-bottom:10px">
+            <button data-key="7" style="background:#000;color:#fff">7</button><button data-key="8" style="background:#000;color:#fff">8</button><button data-key="9" style="background:#000;color:#fff">9</button>
+            <button data-key="4" style="background:#000;color:#fff">4</button><button data-key="5" style="background:#000;color:#fff">5</button><button data-key="6" style="background:#000;color:#fff">6</button>
+            <button data-key="1" style="background:#000;color:#fff">1</button><button data-key="2" style="background:#000;color:#fff">2</button><button data-key="3" style="background:#000;color:#fff">3</button>
+            <button data-key="." style="background:#000;color:#fff">.</button><button data-key="0" style="background:#000;color:#fff">0</button><button data-key="C" style="background:#aa0000;color:#fff">C</button>
+          </div>
+          <button id="cassa-entrata" style="background:#00aa00;color:#fff;width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:8px;margin-bottom:8px;cursor:pointer">ENTRATA</button>
+          <button id="cassa-uscita" style="background:#aa0000;color:#fff;width:100%;padding:14px;font-size:16px;font-weight:700;border:none;border-radius:8px;cursor:pointer">USCITA</button>
+        </div>
         
-        <!-- Colonna Destra: Ordine -->
+        <!-- Modificatori in una riga da 5 -->
+        <div class="modifiers" id="modifiers">
+          <button data-mod="SR">SR</button><button data-mod="M">M</button><button data-mod="K">K</button>
+          <button data-mod="S">S</button><button data-mod="GH">GH</button>
+        </div>
+        
+        <!-- Ordini a tutto schermo -->
         <div class="popup-column">
           <div class="column-title">ORDINE</div>
           <div id="order-list" class="list" aria-live="polite"></div>
@@ -238,8 +242,200 @@ try {
   firebaseEnabled = false;
 }
 
+function openSelectColor(category, label){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = `Scegli il colore testo per: ${label}`;
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const inputRow = document.createElement('div');
+  inputRow.style.display = 'grid';
+  inputRow.style.gridTemplateColumns = '1fr 1fr';
+  inputRow.style.gap = '10px';
+  inputRow.style.marginBottom = '15px';
+
+  const colorInput = document.createElement('input');
+  colorInput.type = 'color';
+  const current = (fontSettings[category].color || '#ffffff');
+  colorInput.value = current.startsWith('#') ? current : ('#' + current);
+  colorInput.style.width = '100%';
+  colorInput.style.height = '42px';
+  colorInput.style.borderRadius = '8px';
+  colorInput.style.border = '2px solid #444';
+  colorInput.style.background = '#222';
+
+  const hexInput = document.createElement('input');
+  hexInput.type = 'text';
+  hexInput.placeholder = 'es. 00ff00 o #00ff00';
+  hexInput.value = current;
+  hexInput.style.width = '100%';
+  hexInput.style.padding = '10px';
+  hexInput.style.fontSize = '16px';
+  hexInput.style.border = '2px solid #444';
+  hexInput.style.background = '#222';
+  hexInput.style.color = '#fff';
+  hexInput.style.borderRadius = '8px';
+
+  colorInput.oninput = ()=> {
+    hexInput.value = colorInput.value;
+  };
+  hexInput.oninput = ()=> {
+    let v = hexInput.value.trim();
+    if(!v) return;
+    if(!v.startsWith('#')) v = '#' + v;
+    if(/^#([0-9a-fA-F]{6})$/.test(v)){
+      colorInput.value = v;
+    }
+  };
+
+  inputRow.appendChild(colorInput);
+  inputRow.appendChild(hexInput);
+  orderList.appendChild(inputRow);
+
+  const preview = document.createElement('div');
+  preview.textContent = 'Anteprima Testo';
+  preview.style.fontWeight = '700';
+  preview.style.padding = '12px';
+  preview.style.border = '2px solid #444';
+  preview.style.borderRadius = '8px';
+  preview.style.background = '#222';
+  preview.style.color = current;
+  orderList.appendChild(preview);
+
+  const updatePreview = ()=> {
+    const v = colorInput.value;
+    preview.style.color = v;
+  };
+  colorInput.addEventListener('input', updatePreview);
+  hexInput.addEventListener('input', updatePreview);
+
+  actionsDiv.innerHTML = "";
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Salva Colore';
+  saveBtn.onclick = ()=> {
+    let v = hexInput.value.trim();
+    if(!v.startsWith('#')) v = '#' + v;
+    if(!/^#([0-9a-fA-F]{6})$/.test(v)){
+      alert('Inserisci un colore esadecimale valido (es. 00ff00)');
+      return;
+    }
+    fontSettings[category].color = v.toLowerCase();
+    applyFont();
+    saveData();
+    openCustomizeFontSettings();
+  };
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'Indietro';
+  backBtn.onclick = openCustomizeFontSettings;
+  actionsDiv.appendChild(saveBtn);
+  actionsDiv.appendChild(backBtn);
+
+  popupTitle.textContent = 'Seleziona Colore';
+  popup.style.display = 'flex';
+}
+
+function openSelectColorForAll(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = 'Scegli il colore testo per TUTTE le categorie:';
+  title.style.fontWeight = '700';
+  title.style.fontSize = '18px';
+  title.style.marginBottom = '15px';
+  orderList.appendChild(title);
+
+  const inputRow = document.createElement('div');
+  inputRow.style.display = 'grid';
+  inputRow.style.gridTemplateColumns = '1fr 1fr';
+  inputRow.style.gap = '10px';
+  inputRow.style.marginBottom = '15px';
+
+  const colorInput = document.createElement('input');
+  colorInput.type = 'color';
+  colorInput.value = '#ffffff';
+  colorInput.style.width = '100%';
+  colorInput.style.height = '42px';
+  colorInput.style.borderRadius = '8px';
+  colorInput.style.border = '2px solid #444';
+  colorInput.style.background = '#222';
+
+  const hexInput = document.createElement('input');
+  hexInput.type = 'text';
+  hexInput.placeholder = 'es. 00ff00 o #00ff00';
+  hexInput.value = '#ffffff';
+  hexInput.style.width = '100%';
+  hexInput.style.padding = '10px';
+  hexInput.style.fontSize = '16px';
+  hexInput.style.border = '2px solid #444';
+  hexInput.style.background = '#222';
+  hexInput.style.color = '#fff';
+  hexInput.style.borderRadius = '8px';
+
+  colorInput.oninput = ()=> {
+    hexInput.value = colorInput.value;
+  };
+  hexInput.oninput = ()=> {
+    let v = hexInput.value.trim();
+    if(!v) return;
+    if(!v.startsWith('#')) v = '#' + v;
+    if(/^#([0-9a-fA-F]{6})$/.test(v)){
+      colorInput.value = v;
+    }
+  };
+
+  inputRow.appendChild(colorInput);
+  inputRow.appendChild(hexInput);
+  orderList.appendChild(inputRow);
+
+  const preview = document.createElement('div');
+  preview.textContent = 'Anteprima Testo';
+  preview.style.fontWeight = '700';
+  preview.style.padding = '12px';
+  preview.style.border = '2px solid #444';
+  preview.style.borderRadius = '8px';
+  preview.style.background = '#222';
+  preview.style.color = '#ffffff';
+  orderList.appendChild(preview);
+
+  const updatePreview = ()=> {
+    const v = colorInput.value;
+    preview.style.color = v;
+  };
+  colorInput.addEventListener('input', updatePreview);
+  hexInput.addEventListener('input', updatePreview);
+
+  actionsDiv.innerHTML = "";
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Salva Colore per Tutti';
+  saveBtn.onclick = ()=> {
+    let v = hexInput.value.trim();
+    if(!v.startsWith('#')) v = '#' + v;
+    if(!/^#([0-9a-fA-F]{6})$/.test(v)){
+      alert('Inserisci un colore esadecimale valido (es. 00ff00)');
+      return;
+    }
+    Object.keys(fontSettings).forEach(key => {
+      fontSettings[key].color = v.toLowerCase();
+    });
+    applyFont();
+    saveData();
+    openCustomizeFontSettings();
+  };
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'Indietro';
+  backBtn.onclick = openCustomizeFontSettings;
+  actionsDiv.appendChild(saveBtn);
+  actionsDiv.appendChild(backBtn);
+
+  popupTitle.textContent = 'Seleziona Colore (Tutti)';
+  popup.style.display = 'flex';
+}
 /* Popup conferma personalizzato */
-function showConfirm(message, onConfirm, title = "Conferma"){
+function showConfirm(message, onConfirm, title = "Conferma", needsInput = false, inputCallback = null){
   const confirmPopup = document.getElementById('confirm-popup');
   const confirmTitle = document.getElementById('confirm-title');
   const confirmMessage = document.getElementById('confirm-message');
@@ -247,8 +443,24 @@ function showConfirm(message, onConfirm, title = "Conferma"){
   const confirmCancel = document.getElementById('confirm-cancel');
   
   confirmTitle.textContent = title;
-  confirmMessage.textContent = message;
-  confirmCallback = onConfirm;
+  
+  // Se serve input numerico, crea un campo input
+  if(needsInput){
+    confirmMessage.innerHTML = `
+      <p style="margin-bottom:15px">${message}</p>
+      <input type="number" id="confirm-input" min="2" max="10" value="2" 
+        style="width:100%;padding:10px;font-size:18px;text-align:center;border:2px solid #444;background:#222;color:#fff;border-radius:8px">
+    `;
+    confirmCallback = ()=> {
+      const input = document.getElementById('confirm-input');
+      const value = parseInt(input.value);
+      if(inputCallback && value >= 2) inputCallback(value);
+    };
+  } else {
+    confirmMessage.textContent = message;
+    confirmCallback = onConfirm;
+  }
+  
   confirmPopup.classList.add('show');
 }
 
@@ -281,13 +493,15 @@ let currentBackground = "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de
 let currentFont = "Arial, Helvetica, sans-serif";
 let currentFontSize = 16; // dimensione base in px
 let fontSettings = {
-  tavoli: {font: "Arial, Helvetica, sans-serif", size: 24},
-  categorie: {font: "Arial, Helvetica, sans-serif", size: 16},
-  sottocategorie: {font: "Arial, Helvetica, sans-serif", size: 16},
-  modificatori: {font: "Arial, Helvetica, sans-serif", size: 14},
-  azioni: {font: "Arial, Helvetica, sans-serif", size: 18},
-  ordini: {font: "Arial, Helvetica, sans-serif", size: 16},
-  conferma: {font: "Arial, Helvetica, sans-serif", size: 16}
+  utility: {font: "Arial, Helvetica, sans-serif", size: 20, padding: 20, color: "#ffffff"},
+  tavoli: {font: "Arial, Helvetica, sans-serif", size: 24, padding: 21, color: "#ffffff"},
+  ordiniSalvati: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
+  categorie: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 20, color: "#ffffff"},
+  sottocategorie: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 20, color: "#ffffff"},
+  modificatori: {font: "Arial, Helvetica, sans-serif", size: 14, padding: 10, color: "#ffffff"},
+  azioni: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 20, color: "#ffffff"},
+  ordini: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 6, color: "#ffffff"},
+  conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"}
 };
 let modifiersList = ["SR", "M", "K", "S", "GH"];
 let subcategories = {
@@ -303,7 +517,6 @@ const savedOrdersDiv = document.getElementById('saved-orders');
 const popup = document.getElementById('popup');
 const popupTitle = document.getElementById('popup-title');
 const categoriesDiv = document.querySelector('.categories-grid');
-const leftColumnDiv = document.querySelector('.popup-column-left');
 const subcatsDiv = document.getElementById('subcats');
 const tempoPad = document.getElementById('tempo-pad');
 const tempoDisplay = document.getElementById('tempo-display');
@@ -400,7 +613,19 @@ function applyParsedData(parsed, fromFirebase = false){
     currentBackground = parsed.currentBackground || currentBackground;
     currentFont = parsed.currentFont || currentFont;
     currentFontSize = parsed.currentFontSize || currentFontSize;
-    fontSettings = parsed.fontSettings || fontSettings;
+    
+    // Carica fontSettings e assicura che tutte le nuove categorie esistano
+    if(parsed.fontSettings){
+      fontSettings = parsed.fontSettings;
+      // Aggiungi le nuove categorie se mancano
+      if(!fontSettings.utility){
+        fontSettings.utility = {font: "Arial, Helvetica, sans-serif", size: 20, padding: 20, color: "#ffffff"};
+      }
+      if(!fontSettings.ordiniSalvati){
+        fontSettings.ordiniSalvati = {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"};
+      }
+    }
+    
     modifiersList = parsed.modifiersList || modifiersList;
     subcategories = parsed.subcategories || subcategories;
     if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
@@ -488,25 +713,25 @@ function renderTables(){
   utilityRow.className = "utility-row";
   
   const totBtn = document.createElement('button');
-  totBtn.className = "table-btn";
+  totBtn.className = "utility-btn";
   totBtn.textContent = "TOTALI";
   totBtn.onclick = openTotals;
   utilityRow.appendChild(totBtn);
 
   const storBtn = document.createElement('button');
-  storBtn.className = "table-btn";
+  storBtn.className = "utility-btn";
   storBtn.textContent = "STORICO";
   storBtn.onclick = openStorico;
   utilityRow.appendChild(storBtn);
   
   const evasiBtn = document.createElement('button');
-  evasiBtn.className = "table-btn";
+  evasiBtn.className = "utility-btn";
   evasiBtn.textContent = "EVASI";
   evasiBtn.onclick = openEvasi;
   utilityRow.appendChild(evasiBtn);
   
   const settingsBtn = document.createElement('button');
-  settingsBtn.className = "table-btn";
+  settingsBtn.className = "utility-btn";
   settingsBtn.innerHTML = "&#9881;";
   settingsBtn.onclick = openSettings;
   utilityRow.appendChild(settingsBtn);
@@ -565,7 +790,7 @@ function renderTables(){
   }
   container.appendChild(row3);
   
-  // Riga 5: BANCO, SALA, SALAF, +
+  // Riga 5: BANCO, SALA, SALAF, +, REFILL, SPESA
   const row4 = document.createElement('div');
   row4.className = "tables-grid";
   
@@ -607,11 +832,18 @@ function renderTables(){
   row4.appendChild(plusBtn);
   
   const refillBtn = document.createElement('button');
-  refillBtn.className = "table-btn";
+  refillBtn.className = "utility-btn";
   refillBtn.textContent = "REFILL";
   refillBtn.style.background = "#0099ff !important"; // Colore blu come categoria FRIGO
   refillBtn.onclick = ()=> openRefillPopup();
   row4.appendChild(refillBtn);
+  
+  const spesaBtn = document.createElement('button');
+  spesaBtn.className = "utility-btn";
+  spesaBtn.textContent = "SPESA";
+  spesaBtn.style.background = "#00aa00 !important"; // Colore verde
+  spesaBtn.onclick = ()=> openSpesaPopup();
+  row4.appendChild(spesaBtn);
   
   container.appendChild(row4);
 }
@@ -680,38 +912,115 @@ function renderSavedButtons(){
 /* Popup Refill */
 function openRefillPopup(){
   currentTarget = {type:null, id:null};
-  leftColumnDiv.style.display = 'none';
-  if(categoriesDiv) categoriesDiv.style.display = 'none';
-  subcatsDiv.innerHTML = "";
-  tempoPad.classList.add('hidden');
-  cassaPad.classList.add('hidden');
-  popupTitle.textContent = "REFILL - Prodotti Frigo";
   
-  // Renderizza la lista prodotti FRIGO
-  renderRefillList();
+  // Crea overlay a schermo intero
+  const refillOverlay = document.createElement('div');
+  refillOverlay.id = 'refill-overlay';
+  refillOverlay.style.position = 'fixed';
+  refillOverlay.style.top = '0';
+  refillOverlay.style.left = '0';
+  refillOverlay.style.right = '0';
+  refillOverlay.style.bottom = '0';
+  refillOverlay.style.background = '#000';
+  refillOverlay.style.zIndex = '9999';
+  refillOverlay.style.padding = '20px';
+  refillOverlay.style.overflowY = 'auto';
+  
+  // Titolo
+  const title = document.createElement('div');
+  title.textContent = 'REFILL - Prodotti Frigo';
+  title.style.fontSize = '24px';
+  title.style.fontWeight = '700';
+  title.style.textAlign = 'center';
+  title.style.marginBottom = '20px';
+  title.style.color = '#fff';
+  refillOverlay.appendChild(title);
   
   // Bottoni azioni
-  actionsDiv.innerHTML = "";
+  const actionsTop = document.createElement('div');
+  actionsTop.style.display = 'flex';
+  actionsTop.style.gap = '10px';
+  actionsTop.style.marginBottom = '20px';
   
   const resetBtn = document.createElement('button');
-  resetBtn.textContent = "Reset";
-  resetBtn.style.background = "#aa0000";
+  resetBtn.textContent = 'Reset';
+  resetBtn.style.background = '#aa0000';
+  resetBtn.style.flex = '1';
+  resetBtn.style.padding = '15px';
+  resetBtn.style.fontSize = '16px';
+  resetBtn.style.fontWeight = '700';
+  resetBtn.style.border = 'none';
+  resetBtn.style.borderRadius = '8px';
+  resetBtn.style.color = '#fff';
+  resetBtn.style.cursor = 'pointer';
   resetBtn.onclick = ()=> {
     showConfirm('Confermi il reset della lista refill?', ()=>{
       refillList = {};
       saveData();
-      renderRefillList();
+      // Chiudi e riapri il popup per aggiornare
+      const overlay = document.getElementById('refill-overlay');
+      if(overlay) overlay.remove();
+      openRefillPopup();
     }, 'Reset Refill');
   };
   
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = "Chiudi";
-  closeBtn.onclick = closePopup;
+  closeBtn.textContent = 'Chiudi';
+  closeBtn.style.background = '#444';
+  closeBtn.style.flex = '1';
+  closeBtn.style.padding = '15px';
+  closeBtn.style.fontSize = '16px';
+  closeBtn.style.fontWeight = '700';
+  closeBtn.style.border = 'none';
+  closeBtn.style.borderRadius = '8px';
+  closeBtn.style.color = '#fff';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.onclick = ()=> {
+    document.getElementById('refill-overlay').remove();
+  };
   
-  actionsDiv.appendChild(resetBtn);
-  actionsDiv.appendChild(closeBtn);
+  actionsTop.appendChild(resetBtn);
+  actionsTop.appendChild(closeBtn);
+  refillOverlay.appendChild(actionsTop);
   
-  popup.style.display = 'flex';
+  // Container prodotti
+  const gridContainer = document.createElement('div');
+  gridContainer.style.display = 'grid';
+  gridContainer.style.gridTemplateColumns = '1fr 1fr';
+  gridContainer.style.gap = '15px';
+  
+  const frigoProducts = CATALOG.c3 || [];
+  
+  frigoProducts.forEach(product => {
+    const qty = refillList[product.name] || 0;
+    
+    const row = document.createElement('div');
+    row.style.display = 'grid';
+    row.style.gridTemplateColumns = '2fr 1fr';
+    row.style.gap = '10px';
+    row.style.alignItems = 'center';
+    row.style.padding = '15px';
+    row.style.background = '#0099ff';
+    row.style.borderRadius = '8px';
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = product.name;
+    nameDiv.style.fontSize = '16px';
+    nameDiv.style.fontWeight = '700';
+    
+    const qtyDiv = document.createElement('div');
+    qtyDiv.textContent = qty;
+    qtyDiv.style.fontSize = '20px';
+    qtyDiv.style.fontWeight = '700';
+    qtyDiv.style.textAlign = 'center';
+    
+    row.appendChild(nameDiv);
+    row.appendChild(qtyDiv);
+    gridContainer.appendChild(row);
+  });
+  
+  refillOverlay.appendChild(gridContainer);
+  document.body.appendChild(refillOverlay);
 }
 
 function updateRefillFromItems(items){
@@ -740,42 +1049,91 @@ function updateRefillFromItems(items){
   saveData();
 }
 
-function renderRefillList(){
+/* Popup Spesa */
+function openSpesaPopup(){
+  currentTarget = {type:null, id:null};
+  // Layout verticale - non serve nascondere colonna
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  popupTitle.textContent = "SPESA - Lista Prodotti";
+  
+  // Renderizza la lista spesa basata su refillList
+  renderSpesaList();
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  
+  actionsDiv.appendChild(closeBtn);
+  
+  popup.style.display = 'flex';
+}
+
+function renderSpesaList(){
   orderList.innerHTML = "";
   
-  // Mostra TUTTI i prodotti FRIGO dal catalogo
+  // Container con griglia a 2 colonne
+  const gridContainer = document.createElement('div');
+  gridContainer.style.display = "grid";
+  gridContainer.style.gridTemplateColumns = "1fr 1fr";
+  gridContainer.style.gap = "10px";
+  
+  // Mostra SOLO i prodotti FRIGO che hanno quantità > 0
   const frigoProducts = CATALOG.c3 || [];
   
-  frigoProducts.forEach(product => {
+  // Filtra solo prodotti con quantità > 0
+  const productsToShow = frigoProducts.filter(product => {
     const qty = refillList[product.name] || 0;
+    return qty > 0;
+  });
+  
+  if(productsToShow.length === 0){
+    const emptyMsg = document.createElement('div');
+    emptyMsg.textContent = "Nessun prodotto da acquistare";
+    emptyMsg.style.textAlign = "center";
+    emptyMsg.style.padding = "20px";
+    emptyMsg.style.fontSize = "16px";
+    emptyMsg.style.color = "#fff";
+    orderList.appendChild(emptyMsg);
+    return;
+  }
+  
+  productsToShow.forEach(product => {
+    const qty = refillList[product.name];
     
     const row = document.createElement('div');
     row.style.display = "grid";
-    row.style.gridTemplateColumns = "3fr 1fr";
-    row.style.gap = "10px";
+    row.style.gridTemplateColumns = "2fr 1fr";
+    row.style.gap = "8px";
     row.style.alignItems = "center";
-    row.style.padding = "12px";
+    row.style.padding = "10px";
     row.style.borderBottom = "1px solid #444";
-    row.style.background = "#0099ff";
+    row.style.background = "#00aa00";
     row.style.borderRadius = "6px";
-    row.style.marginBottom = "8px";
     
     const nameDiv = document.createElement('div');
     nameDiv.textContent = product.name;
-    nameDiv.style.fontSize = "18px";
+    nameDiv.style.fontSize = "14px";
     nameDiv.style.fontWeight = "700";
     
     const qtyDiv = document.createElement('div');
     qtyDiv.textContent = qty;
-    qtyDiv.style.fontSize = "20px";
+    qtyDiv.style.fontSize = "16px";
     qtyDiv.style.fontWeight = "700";
     qtyDiv.style.textAlign = "center";
     
     row.appendChild(nameDiv);
     row.appendChild(qtyDiv);
     
-    orderList.appendChild(row);
+    gridContainer.appendChild(row);
   });
+  
+  orderList.appendChild(gridContainer);
 }
 
 /* Popup tavoli personalizzati */
@@ -787,7 +1145,7 @@ function openCustomTablesPopup(){
   if(oldOverlay) oldOverlay.remove();
   
   // Nascondi gli elementi normali del popup
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
@@ -969,10 +1327,13 @@ function openForTable(tableIndex){
   // Apri l'ordine salvato invece del tavolo
   currentTarget = {type:'saved', id: existingOrder.id};
   popupTitle.textContent = tableName;
-  leftColumnDiv.style.display = 'grid';
+  // Layout verticale - elementi sempre visibili
   if(categoriesDiv) categoriesDiv.style.display = 'grid';
   subcatsDiv.innerHTML = "";
+  subcatsDiv.style.display = 'grid';
   tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'grid';
   renderOrderList();
   renderActionsForSaved();
   popup.style.display = 'flex';
@@ -982,10 +1343,13 @@ function openForSaved(savedId){
   if(!saved) return;
   currentTarget = {type:'saved', id: savedId};
   popupTitle.textContent = saved.tableName;
-  leftColumnDiv.style.display = 'grid';
+  // Layout verticale - elementi sempre visibili
   if(categoriesDiv) categoriesDiv.style.display = 'grid';
   subcatsDiv.innerHTML = "";
+  subcatsDiv.style.display = 'grid';
   tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'grid';
   renderOrderList();
   renderActionsForSaved();
   popup.style.display = 'flex';
@@ -1018,8 +1382,6 @@ function renderActionsForTable(){
           totals[cat] += (it.price || 0) * (it.qty || 1);
         }
       });
-      // Aggiorna lista refill con prodotti FRIGO
-      updateRefillFromItems(items);
       // Svuota il tavolo dopo il pagamento
       tableOrders[currentTarget.id] = [];
       renderOrderList();
@@ -1043,9 +1405,6 @@ function renderActionsForTable(){
       closePopup();
       return;
     }
-    
-    // Aggiorna lista refill con prodotti FRIGO
-    updateRefillFromItems(items);
     
     // Trova l'ordine salvato corrispondente e marcalo come consegnato
     const saved = savedOrders.find(s => s.tableName === tableNames[currentTarget.id]);
@@ -1095,9 +1454,6 @@ function renderActionsForSaved(){
       return;
     }
     
-    // Aggiorna lista refill con prodotti FRIGO
-    updateRefillFromItems(items);
-    
     const saved = savedOrders.find(s => s.id === currentTarget.id);
     if(saved) {
       saved.consegnato = true;
@@ -1121,7 +1477,7 @@ function renderActionsForSaved(){
 
 /* Popup Acconto */
 function openAccontoPopup(){
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
@@ -1237,9 +1593,6 @@ function openAccontoPopup(){
         items.splice(idx, 1);
       });
       
-      // Aggiorna lista refill con prodotti FRIGO pagati
-      updateRefillFromItems(paidItems);
-      
       saveData();
       
       if(items.length === 0 && currentTarget.type === 'saved'){
@@ -1279,6 +1632,22 @@ function closePopup(){
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   cassaPad.classList.add('hidden');
+  
+  // Ripristina lo stile normale di orderList (per refill a schermo intero)
+  orderList.style.position = "";
+  orderList.style.top = "";
+  orderList.style.left = "";
+  orderList.style.right = "";
+  orderList.style.bottom = "";
+  orderList.style.background = "";
+  orderList.style.zIndex = "";
+  orderList.style.padding = "";
+  orderList.style.overflowY = "";
+  
+  // Rimuovi classe fullscreen dal popup e popup-content
+  popup.classList.remove('fullscreen-popup');
+  const popupContent = document.querySelector('.popup-content');
+  if(popupContent) popupContent.classList.remove('fullscreen');
   
   // Rimuovi l'overlay dei tavoli personalizzati se esiste
   const overlay = document.getElementById('custom-tables-overlay');
@@ -1387,6 +1756,14 @@ function addCatalogProduct(name, price){
     }
   }
   
+  // Aggiorna refill list SOLO quando aggiungi un prodotto FRIGO
+  const frigoProducts = CATALOG.c3 || [];
+  const isFrigoProduct = frigoProducts.some(p => p.name === name);
+  if(isFrigoProduct){
+    if(!refillList[name]) refillList[name] = 0;
+    refillList[name] += 1;
+  }
+  
   renderOrderList();
   saveData();
   renderSavedButtons();
@@ -1448,6 +1825,19 @@ function renderOrderList(){
     row.appendChild(nameCell);
     row.appendChild(priceCell);
 
+    // Long press per dividere TEMPO
+    let pressTimer;
+    if(it.name === "TEMPO"){
+      row.ontouchstart = row.onmousedown = (e)=> {
+        pressTimer = setTimeout(()=> {
+          openDivideTempoPopup(i, it);
+        }, 800);
+      };
+      row.ontouchend = row.onmouseup = row.ontouchcancel = ()=> {
+        clearTimeout(pressTimer);
+      };
+    }
+    
     row.onclick = ()=> {
       if(accontoMode){
         accontoMode = false;
@@ -1490,6 +1880,36 @@ function renderOrderList(){
     totDiv.appendChild(priceCell);
     orderList.appendChild(totDiv);
   }
+}
+
+/* Dividi TEMPO */
+function openDivideTempoPopup(itemIndex, item){
+  const items = getEditingItems();
+  
+  showConfirm(
+    `Dividi €${item.price.toFixed(2)} in quante parti?`,
+    null,
+    'Dividi TEMPO',
+    true,
+    (parts) => {
+      if(parts && parts > 1){
+        const pricePerPart = item.price / parts;
+        // Rimuovi il TEMPO originale
+        items.splice(itemIndex, 1);
+        // Aggiungi i nuovi TEMPO divisi
+        for(let i = 0; i < parts; i++){
+          items.push({
+            name: "TEMPO",
+            qty: 1,
+            price: pricePerPart,
+            timestamp: Date.now()
+          });
+        }
+        renderOrderList();
+        saveData();
+      }
+    }
+  );
 }
 
 /* create saved */
@@ -1617,8 +2037,6 @@ function paySavedOrder(savedId){
       totals[cat] += (it.price || 0) * (it.qty || 1);
     }
   });
-  // Aggiorna lista refill con prodotti FRIGO
-  updateRefillFromItems(saved.items);
   savedOrders.splice(idx,1);
   renderSavedButtons();
   closePopup();
@@ -1628,10 +2046,13 @@ function paySavedOrder(savedId){
 /* Totali popup */
 function openTotals(){
   currentTarget = {type:null, id:null};
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
+  subcatsDiv.style.display = 'none';
   tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
   orderList.innerHTML = "";
 
   Object.keys(totals).forEach(k=>{
@@ -1694,10 +2115,13 @@ function openTotals(){
 /* Evasi */
 function openEvasi(){
   currentTarget = {type:null, id:null};
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
+  subcatsDiv.style.display = 'none';
   tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
   orderList.innerHTML = "";
 
   if(!evasiOrders || evasiOrders.length === 0){
@@ -1878,16 +2302,23 @@ function applyBackground(){
 /* Settings */
 function openSettings(){
   currentTarget = {type:null, id:null};
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
   orderList.innerHTML = "";
+
+  // Aggiungi classe fullscreen al popup e popup-content
+  popup.classList.add('fullscreen-popup');
+  const popupContent = document.querySelector('.popup-content');
+  if(popupContent) popupContent.classList.add('fullscreen');
 
   const mainTitle = document.createElement('div');
   mainTitle.textContent = "Impostazioni";
   mainTitle.style.fontWeight = "700";
-  mainTitle.style.fontSize = "20px";
+  mainTitle.style.fontSize = "24px";
   mainTitle.style.marginBottom = "20px";
   mainTitle.style.textAlign = "center";
   orderList.appendChild(mainTitle);
@@ -1905,13 +2336,13 @@ function openSettings(){
     const box = document.createElement('div');
     box.style.border = "2px solid #444";
     box.style.borderRadius = "8px";
-    box.style.padding = "15px";
-    box.style.marginBottom = "10px";
+    box.style.padding = "20px";
+    box.style.marginBottom = "15px";
     box.style.cursor = "pointer";
     box.style.background = "#222";
     box.style.transition = "all 0.2s";
     box.style.textAlign = "center";
-    box.style.fontSize = "18px";
+    box.style.fontSize = "20px";
     box.style.fontWeight = "700";
     box.textContent = option.name;
     
@@ -1965,7 +2396,12 @@ function openBackgroundSettings(){
     {name: "19", url: "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGpwdGVjbzc5eHYweDd4ZDBnODRlMTVtdDczajVmcjZzYmdheTN0YiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l5JbspfwZ0yjHjlJ0K/giphy.gif"},
     {name: "20", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExN25yZ3d4bXJ6NGV3bmozYnF0N3pkZWRtZ3E4enl2dGp3djM3bmhoMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jaOXKCxtBPLieRLI0c/giphy.gif"},
     {name: "21", url: "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnA3Z2UwNHBxMDJ1cTJ4eWw0YjBwYTEwNHJlaGR6YjA4ZHo5cDdrZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ui1VQlTo0FvHrdwJD7/giphy.gif"},
-    {name: "22", url: "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmsza2lqNXB1b2t0dHJyN2RrZXpwNWVpNzdlbjdrajlxeWRjNHk0ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/uFmH8za4E6M5STIiTu/giphy.gif"}
+    {name: "22", url: "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmsza2lqNXB1b2t0dHJyN2RrZXpwNWVpNzdlbjdrajlxeWRjNHk0ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/uFmH8za4E6M5STIiTu/giphy.gif"},
+    {name: "23", url: "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZWlvcTBkYndmbWUzMXIxOHU4YXJnZmlrcjV2cHBpOHlwanZmaHAyeiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MqlVfYDenvazq5MgeK/giphy.gif"},
+    {name: "24", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExN2tqeDZpNngwY3hhM29ncno0NHJ0Z3U4am5xM2dtNjhobm1zcWdqdCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/EyiufcIwTdF35pNIFS/giphy.gif"},
+    {name: "25", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeXJ5bno3ZHg1eWppcmE5c3kyZDZuNWRraG42enFkMGJwb3Z1cXd6NyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qyUJmARdRq7HlQgT5Z/giphy.gif"},
+    {name: "26", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnRmdGgydGN5cHFsZzVqNXN5MHR4bzA4Yjd2ZjR2eGU1M2pndTkxaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Svoz9fOVe8lOYfwTYG/giphy.gif"},
+    {name: "27", url: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaW1nbnB6eWcyNWc5Y2VncG5zdXB4NjN5b3Y0Mm11Nnczbzh0bGJreSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/XEgWz1vwDjzlLVCx04/giphy.gif"}
   ];
 
   backgrounds.forEach(bg => {
@@ -2047,7 +2483,11 @@ function openFontSettings(){
     {name: "Cherry Cream Soda", value: "'Cherry Cream Soda', cursive"},
     {name: "Permanent Marker", value: "'Permanent Marker', cursive"},
     {name: "Swanky and Moo Moo", value: "'Swanky and Moo Moo', cursive"},
-    {name: "Caveat Brush", value: "'Caveat Brush', cursive"}
+    {name: "Caveat Brush", value: "'Caveat Brush', cursive"},
+    {name: "Bangers", value: "'Bangers', cursive"},
+    {name: "Knewave", value: "'Knewave', cursive"},
+    {name: "DynaPuff", value: "'DynaPuff', cursive"},
+    {name: "Indie Flower", value: "'Indie Flower', cursive"}
   ];
 
   fonts.forEach(font => {
@@ -2114,39 +2554,55 @@ function applyFont(){
       font-family: ${currentFont} !important;
     }
     
-    /* Tasti tavoli e utility */
-    button.table-btn {
+    /* Bottoni utility (TOTALI, STORICO, EVASI, SETTINGS, REFILL, SPESA) */
+    button.utility-btn,
+    .utility-btn {
+      font-family: ${fontSettings.utility.font} !important;
+      font-size: ${fontSettings.utility.size}px !important;
+      padding: ${fontSettings.utility.padding}px !important;
+    }
+    
+    /* Bottoni tavoli (TAV-1, TAV-2, BANCO, SALA, SALAF, +) */
+    button.table-btn,
+    .table-btn {
       font-family: ${fontSettings.tavoli.font} !important;
       font-size: ${fontSettings.tavoli.size}px !important;
-      padding: ${21 * scaleFactor}px !important;
+      padding: ${fontSettings.tavoli.padding}px !important;
+    }
+    
+    /* Bottoni ordini salvati */
+    #saved-orders button {
+      font-family: ${fontSettings.ordiniSalvati.font} !important;
+      font-size: ${fontSettings.ordiniSalvati.size}px !important;
+      padding: ${fontSettings.ordiniSalvati.padding}px !important;
     }
     
     /* Categorie */
     .cat-btn {
       font-family: ${fontSettings.categorie.font} !important;
       font-size: ${fontSettings.categorie.size}px !important;
-      padding: ${20 * scaleFactor}px !important;
+      padding: ${fontSettings.categorie.padding}px !important;
     }
     
     /* Sottocategorie */
     .subcat-btn {
       font-family: ${fontSettings.sottocategorie.font} !important;
       font-size: ${fontSettings.sottocategorie.size}px !important;
-      padding: ${20 * scaleFactor}px !important;
+      padding: ${fontSettings.sottocategorie.padding}px !important;
     }
     
     /* Modificatori */
     .modifiers button {
       font-family: ${fontSettings.modificatori.font} !important;
       font-size: ${fontSettings.modificatori.size}px !important;
-      padding: ${10 * scaleFactor}px !important;
+      padding: ${fontSettings.modificatori.padding}px !important;
     }
     
     /* Bottoni azioni (Pagato, Acconto, ecc.) */
     .actions button {
       font-family: ${fontSettings.azioni.font} !important;
       font-size: ${fontSettings.azioni.size}px !important;
-      padding: ${20 * scaleFactor}px !important;
+      padding: ${fontSettings.azioni.padding}px !important;
     }
     
     /* Ordini nella lista */
@@ -2189,6 +2645,57 @@ function applyFont(){
     /* Column titles */
     .column-title {
       font-size: ${18 * scaleFactor}px !important;
+    }
+
+    /* Colori per categoria (testo) */
+    /* Bottoni utility (TOTALI, STORICO, EVASI, SETTINGS, REFILL, SPESA) */
+    button.utility-btn,
+    .utility-btn { 
+      color: ${fontSettings.utility?.color || '#ffffff'} !important; 
+    }
+    /* Bottoni tavoli (TAV-1, TAV-2, ecc., BANCO, SALA, SALAF, +) */
+    button.table-btn,
+    .table-btn { 
+      color: ${fontSettings.tavoli?.color || '#ffffff'} !important; 
+    }
+    /* Bottoni ordini salvati */
+    #saved-orders button { 
+      color: ${fontSettings.ordiniSalvati?.color || '#ffffff'} !important; 
+    }
+    /* Bottoni categorie nel popup */
+    button.cat-btn,
+    .cat-btn,
+    .categories-grid button { 
+      color: ${fontSettings.categorie?.color || '#ffffff'} !important; 
+    }
+    /* Bottoni sottocategorie */
+    button.subcat-btn,
+    .subcat-btn { 
+      color: ${fontSettings.sottocategorie?.color || '#ffffff'} !important; 
+    }
+    /* Modificatori */
+    #modifiers button,
+    .modifiers button { 
+      color: ${fontSettings.modificatori?.color || '#ffffff'} !important; 
+    }
+    /* Azioni dell'ordine */
+    #actions button,
+    .actions button { 
+      color: ${fontSettings.azioni?.color || '#ffffff'} !important; 
+    }
+    /* Lista ordini */
+    #order-list,
+    #order-list .order-row,
+    #order-list .order-name,
+    #order-list .order-price { 
+      color: ${fontSettings.ordini?.color || '#ffffff'} !important; 
+    }
+    /* Popup conferma */
+    .confirm-box,
+    .confirm-box h3,
+    .confirm-box p,
+    #confirm-popup .confirm-buttons button { 
+      color: ${fontSettings.conferma?.color || '#ffffff'} !important; 
     }
   `;
   
@@ -2271,14 +2778,64 @@ function openCustomizeFontSettings(){
   orderList.innerHTML = "";
   
   const title = document.createElement('div');
-  title.textContent = "Personalizza Font e Dimensione per ogni tipo di tasto:";
+  title.textContent = "Personalizza Font, Dimensione, Padding e Colore:";
   title.style.fontWeight = "700";
   title.style.fontSize = "18px";
   title.style.marginBottom = "15px";
   orderList.appendChild(title);
 
+  // Opzione TUTTI all'inizio
+  const allBox = document.createElement('div');
+  allBox.style.border = "3px solid #00ff00";
+  allBox.style.borderRadius = "8px";
+  allBox.style.padding = "15px";
+  allBox.style.marginBottom = "20px";
+  allBox.style.background = "#004400";
+  
+  const allLabel = document.createElement('div');
+  allLabel.textContent = "🌟 TUTTI (modifica tutte le categorie insieme)";
+  allLabel.style.fontWeight = "700";
+  allLabel.style.marginBottom = "10px";
+  allLabel.style.fontSize = "18px";
+  allLabel.style.textAlign = "center";
+  allBox.appendChild(allLabel);
+  
+  const allButtonsDiv = document.createElement('div');
+  allButtonsDiv.style.display = "flex";
+  allButtonsDiv.style.gap = "8px";
+  
+  const allFontBtn = document.createElement('button');
+  allFontBtn.textContent = "Font per Tutti";
+  allFontBtn.style.flex = "1";
+  allFontBtn.onclick = ()=> openSelectFontForAll();
+  
+  const allSizeBtn = document.createElement('button');
+  allSizeBtn.textContent = "Dimensione per Tutti";
+  allSizeBtn.style.flex = "1";
+  allSizeBtn.onclick = ()=> openSelectSizeForAll();
+  
+  const allPaddingBtn = document.createElement('button');
+  allPaddingBtn.textContent = "Padding per Tutti";
+  allPaddingBtn.style.flex = "1";
+  allPaddingBtn.onclick = ()=> openSelectPaddingForAll();
+
+  const allColorBtn = document.createElement('button');
+  allColorBtn.textContent = "Colore per Tutti";
+  allColorBtn.style.flex = "1";
+  allColorBtn.onclick = ()=> openSelectColorForAll();
+  
+  allButtonsDiv.appendChild(allFontBtn);
+  allButtonsDiv.appendChild(allSizeBtn);
+  allButtonsDiv.appendChild(allPaddingBtn);
+  allButtonsDiv.appendChild(allColorBtn);
+  allBox.appendChild(allButtonsDiv);
+  
+  orderList.appendChild(allBox);
+
   const categories = [
-    {key: "tavoli", label: "Tasti Tavoli (TAV, TOTALI, STORICO, EVASI)"},
+    {key: "utility", label: "Bottoni Utility (TOTALI, STORICO, EVASI, SETTINGS, REFILL, SPESA)"},
+    {key: "tavoli", label: "Bottoni Tavoli (TAV-1, TAV-2, BANCO, SALA, SALAF, +)"},
+    {key: "ordiniSalvati", label: "Bottoni Ordini Salvati (in alto a sinistra)"},
     {key: "categorie", label: "Categorie (CAFFÈ, SPINA, FRIGO, ecc.)"},
     {key: "sottocategorie", label: "Sottocategorie (GRAPPA, SAMBUCA, ecc.)"},
     {key: "modificatori", label: "Modificatori (SR, M, K, S, GH)"},
@@ -2303,7 +2860,7 @@ function openCustomizeFontSettings(){
     box.appendChild(labelDiv);
     
     const currentSettings = document.createElement('div');
-    currentSettings.textContent = `Font: ${fontSettings[cat.key].font.split(',')[0]} | Dimensione: ${fontSettings[cat.key].size}px`;
+    currentSettings.textContent = `Font: ${fontSettings[cat.key].font.split(',')[0]} | Dimensione: ${fontSettings[cat.key].size}px | Padding: ${fontSettings[cat.key].padding}px | Colore: ${fontSettings[cat.key].color}`;
     currentSettings.style.fontSize = "14px";
     currentSettings.style.marginBottom = "10px";
     currentSettings.style.color = "#aaa";
@@ -2314,17 +2871,29 @@ function openCustomizeFontSettings(){
     buttonsDiv.style.gap = "8px";
     
     const fontBtn = document.createElement('button');
-    fontBtn.textContent = "Cambia Font";
+    fontBtn.textContent = "Font";
     fontBtn.style.flex = "1";
     fontBtn.onclick = ()=> openSelectFont(cat.key, cat.label);
     
     const sizeBtn = document.createElement('button');
-    sizeBtn.textContent = "Cambia Dimensione";
+    sizeBtn.textContent = "Dimensione";
     sizeBtn.style.flex = "1";
     sizeBtn.onclick = ()=> openSelectSize(cat.key, cat.label);
     
+    const paddingBtn = document.createElement('button');
+    paddingBtn.textContent = "Padding";
+    paddingBtn.style.flex = "1";
+    paddingBtn.onclick = ()=> openSelectPadding(cat.key, cat.label);
+
+    const colorBtn = document.createElement('button');
+    colorBtn.textContent = "Colore";
+    colorBtn.style.flex = "1";
+    colorBtn.onclick = ()=> openSelectColor(cat.key, cat.label);
+    
     buttonsDiv.appendChild(fontBtn);
     buttonsDiv.appendChild(sizeBtn);
+    buttonsDiv.appendChild(paddingBtn);
+    buttonsDiv.appendChild(colorBtn);
     box.appendChild(buttonsDiv);
     
     orderList.appendChild(box);
@@ -2369,7 +2938,11 @@ function openSelectFont(category, label){
     {name: "Cherry Cream Soda", value: "'Cherry Cream Soda', cursive"},
     {name: "Permanent Marker", value: "'Permanent Marker', cursive"},
     {name: "Swanky and Moo Moo", value: "'Swanky and Moo Moo', cursive"},
-    {name: "Caveat Brush", value: "'Caveat Brush', cursive"}
+    {name: "Caveat Brush", value: "'Caveat Brush', cursive"},
+    {name: "Bangers", value: "'Bangers', cursive"},
+    {name: "Knewave", value: "'Knewave', cursive"},
+    {name: "DynaPuff", value: "'DynaPuff', cursive"},
+    {name: "Indie Flower", value: "'Indie Flower', cursive"}
   ];
 
   fonts.forEach(font => {
@@ -2461,6 +3034,261 @@ function openSelectSize(category, label){
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Seleziona Dimensione";
+  popup.style.display = 'flex';
+}
+
+function openSelectPadding(category, label){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = `Scegli il padding per: ${label}`;
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+  
+  const infoDiv = document.createElement('div');
+  infoDiv.textContent = "Il padding è lo spazio interno tra il bordo del bottone e il testo";
+  infoDiv.style.fontSize = "14px";
+  infoDiv.style.marginBottom = "20px";
+  infoDiv.style.textAlign = "center";
+  infoDiv.style.padding = "10px";
+  infoDiv.style.background = "#222";
+  infoDiv.style.borderRadius = "8px";
+  infoDiv.style.color = "#aaa";
+  orderList.appendChild(infoDiv);
+
+  const paddings = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
+  paddings.forEach(padding => {
+    const box = document.createElement('div');
+    box.style.border = fontSettings[category].padding === padding ? "3px solid #00ff00" : "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = padding + "px";
+    box.style.marginBottom = "10px";
+    box.style.cursor = "pointer";
+    box.style.background = "#222";
+    box.style.fontSize = "16px";
+    box.style.fontWeight = "700";
+    box.style.textAlign = "center";
+    box.textContent = `${padding}px`;
+    
+    box.onclick = ()=> {
+      fontSettings[category].padding = padding;
+      applyFont();
+      saveData();
+      openSelectPadding(category, label);
+    };
+    
+    box.onmouseenter = ()=> {
+      if(fontSettings[category].padding !== padding) box.style.border = "2px solid #888";
+    };
+    box.onmouseleave = ()=> {
+      if(fontSettings[category].padding !== padding) box.style.border = "2px solid #444";
+    };
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = openCustomizeFontSettings;
+  actionsDiv.appendChild(backBtn);
+
+  popupTitle.textContent = "Seleziona Padding";
+  popup.style.display = 'flex';
+}
+
+/* Funzioni per modificare TUTTE le categorie insieme */
+function openSelectFontForAll(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Scegli il font per TUTTE le categorie:";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const fonts = [
+    {name: "Arial", value: "Arial, Helvetica, sans-serif"},
+    {name: "Times New Roman", value: "Times New Roman, Times, serif"},
+    {name: "Courier New", value: "Courier New, Courier, monospace"},
+    {name: "Georgia", value: "Georgia, serif"},
+    {name: "Verdana", value: "Verdana, Geneva, sans-serif"},
+    {name: "Comic Sans MS", value: "Comic Sans MS, cursive"},
+    {name: "Impact", value: "Impact, Charcoal, sans-serif"},
+    {name: "Trebuchet MS", value: "Trebuchet MS, sans-serif"},
+    {name: "Palatino", value: "Palatino Linotype, Book Antiqua, Palatino, serif"},
+    {name: "Lucida Console", value: "Lucida Console, Monaco, monospace"},
+    {name: "Mountains of Christmas", value: "'Mountains of Christmas', cursive"},
+    {name: "Dokdo", value: "'Dokdo', cursive"},
+    {name: "Rubik Vinyl", value: "'Rubik Vinyl', cursive"},
+    {name: "Irish Grover", value: "'Irish Grover', cursive"},
+    {name: "Rampart One", value: "'Rampart One', cursive"},
+    {name: "Cherry Cream Soda", value: "'Cherry Cream Soda', cursive"},
+    {name: "Permanent Marker", value: "'Permanent Marker', cursive"},
+    {name: "Swanky and Moo Moo", value: "'Swanky and Moo Moo', cursive"},
+    {name: "Caveat Brush", value: "'Caveat Brush', cursive"},
+    {name: "Bangers", value: "'Bangers', cursive"},
+    {name: "Knewave", value: "'Knewave', cursive"},
+    {name: "DynaPuff", value: "'DynaPuff', cursive"},
+    {name: "Indie Flower", value: "'Indie Flower', cursive"}
+  ];
+
+  fonts.forEach(font => {
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "15px";
+    box.style.marginBottom = "10px";
+    box.style.cursor = "pointer";
+    box.style.background = "#222";
+    box.style.fontFamily = font.value;
+    box.style.fontSize = "18px";
+    box.style.fontWeight = "700";
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = font.name;
+    box.appendChild(nameDiv);
+    
+    box.onclick = ()=> {
+      // Applica a tutte le categorie
+      Object.keys(fontSettings).forEach(key => {
+        fontSettings[key].font = font.value;
+      });
+      applyFont();
+      saveData();
+      openSelectFontForAll();
+    };
+    
+    box.onmouseenter = ()=> box.style.border = "2px solid #888";
+    box.onmouseleave = ()=> box.style.border = "2px solid #444";
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = openCustomizeFontSettings;
+  actionsDiv.appendChild(backBtn);
+
+  popupTitle.textContent = "Font per Tutti";
+  popup.style.display = 'flex';
+}
+
+function openSelectSizeForAll(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Scegli la dimensione per TUTTE le categorie:";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+
+  const sizes = [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40];
+
+  sizes.forEach(size => {
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = "15px";
+    box.style.marginBottom = "10px";
+    box.style.cursor = "pointer";
+    box.style.background = "#222";
+    box.style.fontSize = size + "px";
+    box.style.fontWeight = "700";
+    box.style.textAlign = "center";
+    box.textContent = `${size}px`;
+    
+    box.onclick = ()=> {
+      // Applica a tutte le categorie
+      Object.keys(fontSettings).forEach(key => {
+        fontSettings[key].size = size;
+      });
+      applyFont();
+      saveData();
+      openSelectSizeForAll();
+    };
+    
+    box.onmouseenter = ()=> box.style.border = "2px solid #888";
+    box.onmouseleave = ()=> box.style.border = "2px solid #444";
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = openCustomizeFontSettings;
+  actionsDiv.appendChild(backBtn);
+
+  popupTitle.textContent = "Dimensione per Tutti";
+  popup.style.display = 'flex';
+}
+
+function openSelectPaddingForAll(){
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "Scegli il padding per TUTTE le categorie:";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  orderList.appendChild(title);
+  
+  const infoDiv = document.createElement('div');
+  infoDiv.textContent = "Il padding è lo spazio interno tra il bordo del bottone e il testo";
+  infoDiv.style.fontSize = "14px";
+  infoDiv.style.marginBottom = "20px";
+  infoDiv.style.textAlign = "center";
+  infoDiv.style.padding = "10px";
+  infoDiv.style.background = "#222";
+  infoDiv.style.borderRadius = "8px";
+  infoDiv.style.color = "#aaa";
+  orderList.appendChild(infoDiv);
+
+  const paddings = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
+  paddings.forEach(padding => {
+    const box = document.createElement('div');
+    box.style.border = "2px solid #444";
+    box.style.borderRadius = "8px";
+    box.style.padding = padding + "px";
+    box.style.marginBottom = "10px";
+    box.style.cursor = "pointer";
+    box.style.background = "#222";
+    box.style.fontSize = "16px";
+    box.style.fontWeight = "700";
+    box.style.textAlign = "center";
+    box.textContent = `${padding}px`;
+    
+    box.onclick = ()=> {
+      // Applica a tutte le categorie
+      Object.keys(fontSettings).forEach(key => {
+        fontSettings[key].padding = padding;
+      });
+      applyFont();
+      saveData();
+      openSelectPaddingForAll();
+    };
+    
+    box.onmouseenter = ()=> box.style.border = "2px solid #888";
+    box.onmouseleave = ()=> box.style.border = "2px solid #444";
+    
+    orderList.appendChild(box);
+  });
+
+  actionsDiv.innerHTML = "";
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = openCustomizeFontSettings;
+  actionsDiv.appendChild(backBtn);
+
+  popupTitle.textContent = "Padding per Tutti";
   popup.style.display = 'flex';
 }
 
@@ -2604,7 +3432,7 @@ function deleteProduct(catKey, idx){
 /* Subcategory Settings */
 function openSubcategorySettings(){
   currentTarget = {type:null, id:null};
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   orderList.innerHTML = "";
@@ -2905,9 +3733,13 @@ function deleteModifier(idx){
 /* Storico */
 function openStorico(){
   currentTarget = {type:null, id:null};
-  leftColumnDiv.style.display = 'none';
+  // Layout verticale - non serve nascondere colonna
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
+  subcatsDiv.style.display = 'none';
   tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
   orderList.innerHTML = "";
 
   if(!storico || storico.length === 0){
