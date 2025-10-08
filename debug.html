@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover" />
+    <title>Debug REFILL Settings</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #000; 
+            color: #fff; 
+            padding: 20px; 
+        }
+        button { 
+            padding: 15px; 
+            margin: 10px; 
+            font-size: 16px; 
+            background: #333; 
+            color: #fff; 
+            border: 1px solid #666; 
+            border-radius: 8px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #555; }
+        .test-area { 
+            margin: 20px 0; 
+            padding: 20px; 
+            border: 2px solid #444; 
+            border-radius: 8px; 
+        }
+        .refill-btn {
+            background: #0099ff;
+            padding: 20px;
+            margin: 10px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug REFILL Settings</h1>
+    
+    <div class="test-area">
+        <h2>Test 1: Verifica fontSettings</h2>
+        <button onclick="testFontSettings()">Test fontSettings.refill</button>
+        <div id="fontTest"></div>
+    </div>
+    
+    <div class="test-area">
+        <h2>Test 2: Simula bottoni REFILL</h2>
+        <button onclick="createRefillButtons()">Crea Bottoni REFILL</button>
+        <div id="refillButtons"></div>
+    </div>
+    
+    <div class="test-area">
+        <h2>Test 3: Modifica impostazioni</h2>
+        <button onclick="changeRefillSettings()">Cambia Font REFILL</button>
+        <button onclick="changeSizeSettings()">Cambia Size REFILL</button>
+        <button onclick="changeColorSettings()">Cambia Colore REFILL</button>
+    </div>
+    
+    <div class="test-area">
+        <h2>Test 4: Console Log</h2>
+        <button onclick="showConsoleInfo()">Mostra Info Console</button>
+        <div id="consoleInfo"></div>
+    </div>
+
+    <script>
+        // Copia esatta delle impostazioni dal file originale
+        let fontSettings = {
+            utility: {font: "Arial, Helvetica, sans-serif", size: 20, padding: 20, color: "#ffffff"},
+            tavoli: {font: "Arial, Helvetica, sans-serif", size: 24, padding: 21, color: "#ffffff"},
+            ordiniSalvati: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
+            categorie: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 20, color: "#ffffff"},
+            sottocategorie: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 20, color: "#ffffff"},
+            modificatori: {font: "Arial, Helvetica, sans-serif", size: 14, padding: 10, color: "#ffffff"},
+            azioni: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 20, color: "#ffffff"},
+            ordini: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 6, color: "#ffffff"},
+            conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
+            refill: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 30, color: "#ffffff"}
+        };
+
+        function testFontSettings() {
+            const output = document.getElementById('fontTest');
+            try {
+                const refill = fontSettings.refill;
+                output.innerHTML = `
+                    <p>✅ Font: ${refill.font}</p>
+                    <p>✅ Size: ${refill.size}px</p>
+                    <p>✅ Padding: ${refill.padding}px</p>
+                    <p>✅ Color: ${refill.color}</p>
+                    <p style="color: green;">fontSettings.refill funziona!</p>
+                `;
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">❌ Errore: ${error.message}</p>`;
+            }
+        }
+
+        function createRefillButtons() {
+            const container = document.getElementById('refillButtons');
+            container.innerHTML = '';
+            
+            const categories = [
+                { key: 'c1', name: 'CAFFÈ', color: '#888' },
+                { key: 'c2', name: 'SPINA', color: '#ff8800' },
+                { key: 'c3', name: 'FRIGO', color: '#0099ff' }
+            ];
+
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.name;
+                btn.style.padding = fontSettings.refill.padding + 'px';
+                btn.style.fontSize = fontSettings.refill.size + 'px';
+                btn.style.fontFamily = fontSettings.refill.font;
+                btn.style.background = cat.color;
+                btn.style.color = fontSettings.refill.color;
+                btn.style.margin = '5px';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '8px';
+                container.appendChild(btn);
+            });
+        }
+
+        function changeRefillSettings() {
+            fontSettings.refill.font = "'Comic Sans MS', cursive";
+            createRefillButtons();
+            console.log('Font cambiato a Comic Sans MS');
+        }
+
+        function changeSizeSettings() {
+            fontSettings.refill.size = 24;
+            createRefillButtons();
+            console.log('Size cambiato a 24px');
+        }
+
+        function changeColorSettings() {
+            fontSettings.refill.color = '#00ff00';
+            createRefillButtons();
+            console.log('Colore cambiato a verde');
+        }
+
+        function showConsoleInfo() {
+            const output = document.getElementById('consoleInfo');
+            const userAgent = navigator.userAgent;
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            
+            output.innerHTML = `
+                <p><strong>User Agent:</strong> ${userAgent}</p>
+                <p><strong>Mobile:</strong> ${isMobile ? 'Sì' : 'No'}</p>
+                <p><strong>Viewport:</strong> ${window.innerWidth}x${window.innerHeight}</p>
+                <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            `;
+            
+            console.log('=== DEBUG INFO ===');
+            console.log('User Agent:', userAgent);
+            console.log('Is Mobile:', isMobile);
+            console.log('Viewport:', window.innerWidth, 'x', window.innerHeight);
+            console.log('fontSettings.refill:', fontSettings.refill);
+        }
+
+        // Auto-run al caricamento
+        window.onload = function() {
+            console.log('🚀 Debug page loaded');
+            testFontSettings();
+        };
+    </script>
+</body>
+</html>

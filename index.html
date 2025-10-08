@@ -17,10 +17,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<title>Break Orders — Completo</title>
+<title>Break Orders — Completo v2.1 (14:44)</title>
 <style>
   /* v2.1 - Tasti grandi su tablet */
   :root{--tempo-color:#008800}
+  *{scroll-behavior:smooth}
   html{height:100%;overflow:hidden}
   body{
     font-family:Arial,Helvetica,sans-serif;
@@ -30,7 +31,8 @@
     touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
     position:fixed;width:100%;height:100%;overflow-y:auto;top:0;left:0
   }
-  button{padding:12px;font-size:16px;cursor:pointer;border-radius:8px;border:1px solid #444;background:#000;color:#fff;touch-action:manipulation}
+  button{padding:12px;font-size:16px;cursor:pointer;border-radius:8px;border:1px solid #444;background:#000;color:#fff;touch-action:manipulation;transition:transform 0.2s ease,background 0.2s ease,box-shadow 0.2s ease}
+  button:active{transform:scale(0.95);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
   
   /* Layout ordini salvati */
   #saved-orders{
@@ -53,9 +55,19 @@
     min-height:auto !important;
     box-sizing:border-box !important;
     line-height:1.2 !important;
+    transition:transform 0.2s ease,background 0.2s ease,box-shadow 0.2s ease !important;
+  }
+  #saved-orders button:active{
+    transform:scale(0.95) !important;
+    box-shadow:0 4px 12px rgba(0,0,0,0.5) !important;
   }
   #saved-orders button.has-orders{
     background:#cc0000 !important;
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(204,0,0,0.7)}
+    50%{box-shadow:0 0 0 8px rgba(204,0,0,0)}
   }
   
   /* Barra tavoli in basso */
@@ -64,17 +76,25 @@
   .utility-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
   .tables-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.5vw}
   .tables-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:0.5vw}
-  button.table-btn{background:#000 !important;color:#fff !important;border-radius:8px !important;padding:1.5vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 20px) !important;font-weight:700 !important;min-height:auto !important;box-sizing:border-box !important;line-height:1.2 !important}
+  button.table-btn{background:#000 !important;color:#fff !important;border-radius:8px !important;padding:1.5vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 20px) !important;font-weight:700 !important;min-height:auto !important;box-sizing:border-box !important;line-height:1.2 !important;transition:transform 0.2s ease,background 0.2s ease,box-shadow 0.2s ease !important}
+  button.table-btn:active{transform:scale(0.95) !important;box-shadow:0 4px 12px rgba(0,0,0,0.5) !important}
   button.table-btn.has-orders{background:#cc0000 !important}
-  .utility-btn{padding:1.2vh 0.3vw;font-size:clamp(9px, 2vw, 14px);line-height:1.2}
-  .popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;overflow:hidden;z-index:4000}
+  .utility-btn{padding:1.2vh 0.3vw;font-size:clamp(9px, 2vw, 14px);line-height:1.2;transition:transform 0.2s ease,background 0.2s ease}
+  .utility-btn:active{transform:scale(0.95)}
+  .popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;overflow:hidden;z-index:4000;opacity:0;transition:opacity 0.3s ease-in-out}
+  .popup.show{display:flex;animation:fadeIn 0.3s ease-in-out forwards}
+  .popup.hide{animation:fadeOut 0.3s ease-in-out forwards}
   .popup.fullscreen-popup{align-items:flex-start;justify-content:flex-start;background:#000}
   .popup-content{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center fixed;
-background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;margin:0;box-sizing:border-box;color:#fff;border:2px solid #444;overflow:hidden;display:flex;flex-direction:column}
+background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;margin:0;box-sizing:border-box;color:#fff;border:2px solid #444;overflow:hidden;display:flex;flex-direction:column;transform:translateY(20px);opacity:0;transition:all 0.3s ease-in-out}
+  .popup.show .popup-content{transform:translateY(0);opacity:1}
   .popup-content.fullscreen{width:100vw !important;height:100vh !important;padding:20px;border-radius:0;margin:0}
   .popup-content.fullscreen .popup-main{display:block !important;grid-template-columns:1fr !important;overflow-y:auto !important;height:100% !important}
   .popup-content.fullscreen .popup-column-left{display:none !important}
   .popup-content.fullscreen .popup-column{background:transparent !important;padding:0 !important;overflow-y:auto !important;height:100% !important}
+  .popup-content.spesa-popup{width:90vw !important;height:90vh !important;padding:20px;border-radius:12px;display:flex;flex-direction:column}
+  .popup-content.spesa-popup .popup-header{margin-bottom:15px}
+  .popup-content.spesa-popup .popup-main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
   .hidden{display:none}
   .popup-header{display:flex;flex-direction:column;gap:10px;margin-bottom:15px}
   .popup-header h3{margin:0;text-align:center;font-size:20px}
@@ -86,7 +106,9 @@ background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;marg
   .column-title{font-size:14px;font-weight:700;margin-bottom:10px;text-align:center;color:#fff}
   #categories{display:contents}
   #subcats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;overflow-y:auto;align-content:start}
-  .cat-btn,.subcat-btn{color:#fff;border:none;border-radius:8px;padding:20px;font-size:16px;font-weight:700;width:100%;text-align:center;background:#000}
+  .cat-btn,.subcat-btn{color:#fff;border:none;border-radius:8px;padding:20px;font-size:16px;font-weight:700;width:100%;text-align:center;background:#000;transition:transform 0.2s ease,box-shadow 0.2s ease,filter 0.2s ease}
+  .cat-btn:active,.subcat-btn:active{transform:scale(0.95);box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+  .cat-btn:hover,.subcat-btn:hover{filter:brightness(1.2)}
   .back-btn{background:#555;color:#fff;border:none;border-radius:6px;padding:10px;margin:4px 0;font-size:14px;grid-column:span 2;cursor:pointer}
   .cat-caffe{background:#888}.cat-spina{background:#ff8800}.cat-frigo{background:#0099ff}.cat-super{background:#aaaa00}.cat-snack{background:#ff0000}.cat-tempo{background:var(--tempo-color)}.cat-quote{background:#0000ff}.cat-cassa{background:#000;color:#fff}
   .modifiers{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:0}
@@ -99,25 +121,38 @@ background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;marg
   .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
   .numpad button{font-size:18px;padding:14px;border-radius:8px;background:var(--tempo-color);color:#fff;border:none;width:100%;box-sizing:border-box;font-weight:700}
   .tempo-display{width:100%;padding:10px;font-size:18px;text-align:right;margin-bottom:8px;background:#111;border:1px solid #333;color:#fff;border-radius:6px}
-  .order-row{display:grid;grid-template-columns:3fr 1fr;align-items:center;padding:4px 0;border-bottom:1px solid #333}
+  .order-row{display:grid;grid-template-columns:3fr 1fr;align-items:center;padding:4px 0;border-bottom:1px solid #333;animation:slideUp 0.3s ease-out}
   .order-name{text-align:left}
   .order-price{text-align:right;font-weight:bold}
+  .order-row:hover{background:rgba(255,255,255,0.05);cursor:pointer}
+  /* Animazioni */
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes fadeOut{from{opacity:1}to{opacity:0}}
+  @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @keyframes scaleIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+  
   /* Popup conferma personalizzato */
-  #confirm-popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:10000}
-  #confirm-popup.show{display:flex}
-  .confirm-box{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center;background-size:cover;padding:24px;border-radius:10px;border:2px solid #444;color:#fff;text-align:center;width:90vw;max-width:500px}
+  #confirm-popup{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;z-index:10000;opacity:0;transition:opacity 0.3s ease-in-out}
+  #confirm-popup.show{display:flex;animation:fadeIn 0.3s ease-in-out forwards}
+  #confirm-popup.hide{animation:fadeOut 0.3s ease-in-out forwards}
+  .confirm-box{background:#000 url("https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4") no-repeat center center;background-size:cover;padding:24px;border-radius:10px;border:2px solid #444;color:#fff;text-align:center;width:90vw;max-width:500px;transform:scale(0.9);opacity:0;transition:all 0.3s ease-in-out}
+  #confirm-popup.show .confirm-box{animation:scaleIn 0.3s ease-in-out forwards}
   .confirm-box h3{margin:0 0 16px 0;font-size:20px}
   .confirm-box p{margin:0 0 20px 0;font-size:16px}
   .confirm-buttons{display:flex;gap:10px;justify-content:center}
-  .confirm-buttons button{padding:12px 24px;font-size:16px;border-radius:8px;cursor:pointer;border:none;font-weight:700}
+  .confirm-buttons button{padding:12px 24px;font-size:16px;border-radius:8px;cursor:pointer;border:none;font-weight:700;transition:transform 0.2s ease,background 0.2s ease}
+  .confirm-buttons button:active{transform:scale(0.95)}
   .btn-confirm{background:#00aa00;color:#fff}
+  .btn-confirm:hover{background:#00cc00}
   .btn-cancel{background:#aa0000;color:#fff}
+  .btn-cancel:hover{background:#cc0000}
   /* Smartphone - Layout a due colonne mantenuto */
   @media(max-width:768px){
     .popup-content{width:100vw;height:100vh}
+    .popup-content.spesa-popup{width:100vw !important;height:100vh !important;padding:10px !important;border-radius:0 !important}
     #saved-orders{left:10px;right:10px;gap:0.5vw;grid-template-columns:repeat(4,1fr)}
     #saved-orders button{padding:1vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 13px) !important}
-    .popup-content{padding:10px}
+    .popup-content{padding:10px; overflow-y: auto; -webkit-overflow-scrolling: touch;}
     .popup-header{flex-direction:column;gap:8px;margin-bottom:10px}
     .popup-header h3{text-align:center;font-size:18px}
     .actions{justify-content:center;margin-bottom:8px}
@@ -135,7 +170,9 @@ background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;marg
     .order-row{padding:5px 0;font-size:13px}
     .numpad button{font-size:14px;padding:10px}
     .confirm-box{padding:20px}
-  }
+    .refill-categories-grid{grid-template-columns:1fr !important;gap:10px !important;padding:10px !important}
+    .refill-products-grid{grid-template-columns:1fr !important;gap:8px !important;padding:10px !important}
+      }
   /* Telefoni piccoli */
   @media(max-width:480px){
     .actions button{font-size:10px;padding:5px 8px}
@@ -145,6 +182,11 @@ background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;marg
 </style>
 </head>
 <body>
+  <!-- Indicatore stato offline -->
+  <div id="offline-indicator" style="display:none;position:fixed;top:5px;right:5px;background:#ff6600;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;z-index:10000;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
+    📡 OFFLINE
+  </div>
+  
   <!-- Ordini salvati in alto a sinistra -->
   <div id="saved-orders"></div>
   
@@ -345,12 +387,15 @@ function openSelectColor(category, label){
   };
   const backBtn = document.createElement('button');
   backBtn.textContent = 'Indietro';
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(saveBtn);
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = 'Seleziona Colore';
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function openSelectColorForAll(){
@@ -442,12 +487,15 @@ function openSelectColorForAll(){
   };
   const backBtn = document.createElement('button');
   backBtn.textContent = 'Indietro';
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(saveBtn);
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = 'Seleziona Colore (Tutti)';
-  popup.style.display = 'flex';
+  showPopup();
 }
 /* Popup conferma personalizzato */
 function showConfirm(message, onConfirm, title = "Conferma", needsInput = false, inputCallback = null){
@@ -476,13 +524,21 @@ function showConfirm(message, onConfirm, title = "Conferma", needsInput = false,
     confirmCallback = onConfirm;
   }
   
+  confirmPopup.style.display = 'flex';
+  // Force reflow per attivare l'animazione
+  void confirmPopup.offsetWidth;
   confirmPopup.classList.add('show');
 }
 
 function hideConfirm(){
   const confirmPopup = document.getElementById('confirm-popup');
   confirmPopup.classList.remove('show');
-  confirmCallback = null;
+  confirmPopup.classList.add('hide');
+  setTimeout(() => {
+    confirmPopup.style.display = 'none';
+    confirmPopup.classList.remove('hide');
+    confirmCallback = null;
+  }, 300);
 }
 
 document.getElementById('confirm-ok').addEventListener('click', ()=>{
@@ -516,7 +572,8 @@ let fontSettings = {
   modificatori: {font: "Arial, Helvetica, sans-serif", size: 14, padding: 10, color: "#ffffff"},
   azioni: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 20, color: "#ffffff"},
   ordini: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 6, color: "#ffffff"},
-  conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"}
+  conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
+  refill: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 30, color: "#ffffff"}
 };
 let modifiersList = ["SR", "M", "K", "S", "GH"];
 let subcategories = {
@@ -544,6 +601,72 @@ const orderList = document.getElementById('order-list');
 let tempoValue = "";
 let cassaValue = "";
 let confirmCallback = null;
+let refillHistoryHandler = null; // intercetta il tasto back mentre il REFILL è aperto
+
+function enableRefillHistoryTrap(){
+  try{
+    if(refillHistoryHandler) return;
+    refillHistoryHandler = (e)=>{
+      const overlay = document.getElementById('refill-overlay');
+      if(overlay){
+        if(e && e.preventDefault) e.preventDefault();
+        // ripristina lo stato per evitare di uscire
+        try { history.pushState({refill:true}, ''); } catch(_){ }
+        overlay.remove();
+      }
+    };
+    window.addEventListener('popstate', refillHistoryHandler);
+    try { history.pushState({refill:true}, ''); } catch(_){ }
+  }catch(err){ console.warn('enableRefillHistoryTrap error', err); }
+}
+
+function disableRefillHistoryTrap(){
+  try{
+    if(!refillHistoryHandler) return;
+    window.removeEventListener('popstate', refillHistoryHandler);
+    refillHistoryHandler = null;
+  }catch(err){ console.warn('disableRefillHistoryTrap error', err); }
+}
+
+/* Funzioni helper per animazioni popup */
+function showPopup(){
+  popup.classList.remove('hide');
+  popup.style.display = 'flex';
+  // Force reflow per attivare l'animazione
+  void popup.offsetWidth;
+  popup.classList.add('show');
+}
+
+function hidePopup(callback){
+  popup.classList.remove('show');
+  popup.classList.add('hide');
+  setTimeout(() => {
+    popup.style.display = 'none';
+    popup.classList.remove('hide');
+    if(callback) callback();
+  }, 300); // Durata dell'animazione
+}
+
+/* Funzione helper per vibrazione tattile */
+function vibrate(pattern = [10]){
+  if ('vibrate' in navigator) {
+    try {
+      navigator.vibrate(pattern);
+    } catch(e) {
+      console.log('Vibration not supported:', e);
+    }
+  }
+}
+
+// Pattern di vibrazione predefiniti
+const VIBRATION_PATTERNS = {
+  tap: [10],           // Tap leggero
+  click: [20],         // Click normale
+  success: [30, 50, 30], // Successo (doppio tap)
+  error: [100],        // Errore (vibrazione lunga)
+  warning: [50, 30, 50], // Avviso
+  longPress: [50]      // Pressione lunga
+};
 
 function saveData(){
   try{
@@ -730,25 +853,40 @@ function renderTables(){
   const totBtn = document.createElement('button');
   totBtn.className = "utility-btn";
   totBtn.textContent = "TOTALI";
-  totBtn.onclick = openTotals;
+  totBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openTotals();
+  };
   utilityRow.appendChild(totBtn);
 
   const storBtn = document.createElement('button');
   storBtn.className = "utility-btn";
   storBtn.textContent = "STORICO";
-  storBtn.onclick = openStorico;
+  storBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openStorico();
+  };
   utilityRow.appendChild(storBtn);
   
   const evasiBtn = document.createElement('button');
   evasiBtn.className = "utility-btn";
   evasiBtn.textContent = "EVASI";
-  evasiBtn.onclick = openEvasi;
+  evasiBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openEvasi();
+  };
   utilityRow.appendChild(evasiBtn);
   
   const settingsBtn = document.createElement('button');
   settingsBtn.className = "utility-btn";
   settingsBtn.innerHTML = "&#9881;";
-  settingsBtn.onclick = openSettings;
+  settingsBtn.onclick = ()=> {
+    console.log('⚙️ Settings button clicked');
+    console.log('📱 Viewport:', window.innerWidth + 'x' + window.innerHeight);
+    console.log('📱 User Agent:', navigator.userAgent);
+    vibrate(VIBRATION_PATTERNS.tap);
+    openSettings();
+  };
   utilityRow.appendChild(settingsBtn);
   
   container.appendChild(utilityRow);
@@ -765,7 +903,10 @@ function renderTables(){
       const tableName = `TAV-${i}`;
       // Rimuovo il comportamento rosso dai tavoli
       b.textContent = tableName;
-      b.onclick = ()=> openForTable(idx);
+      b.onclick = ()=> {
+        vibrate(VIBRATION_PATTERNS.tap);
+        openForTable(idx);
+      };
       row1.appendChild(b);
     }
   }
@@ -782,7 +923,10 @@ function renderTables(){
       const tableName = `TAV-${i}`;
       // Rimuovo il comportamento rosso dai tavoli
       b.textContent = tableName;
-      b.onclick = ()=> openForTable(idx);
+      b.onclick = ()=> {
+        vibrate(VIBRATION_PATTERNS.tap);
+        openForTable(idx);
+      };
       row2.appendChild(b);
     }
   }
@@ -799,7 +943,10 @@ function renderTables(){
       const tableName = `TAV-${i}`;
       // Rimuovo il comportamento rosso dai tavoli
       b.textContent = tableName;
-      b.onclick = ()=> openForTable(idx);
+      b.onclick = ()=> {
+        vibrate(VIBRATION_PATTERNS.tap);
+        openForTable(idx);
+      };
       row3.appendChild(b);
     }
   }
@@ -815,7 +962,10 @@ function renderTables(){
     b.className = "table-btn";
     // Rimuovo il comportamento rosso dai tavoli
     b.textContent = "BANCO";
-    b.onclick = ()=> openForTable(bancoIdx);
+    b.onclick = ()=> {
+      vibrate(VIBRATION_PATTERNS.tap);
+      openForTable(bancoIdx);
+    };
     row4.appendChild(b);
   }
   
@@ -825,7 +975,10 @@ function renderTables(){
     b.className = "table-btn";
     // Rimuovo il comportamento rosso dai tavoli
     b.textContent = "SALA";
-    b.onclick = ()=> openForTable(salaIdx);
+    b.onclick = ()=> {
+      vibrate(VIBRATION_PATTERNS.tap);
+      openForTable(salaIdx);
+    };
     row4.appendChild(b);
   }
   
@@ -835,7 +988,10 @@ function renderTables(){
     b.className = "table-btn";
     // Rimuovo il comportamento rosso dai tavoli
     b.textContent = "SALAF";
-    b.onclick = ()=> openForTable(salafIdx);
+    b.onclick = ()=> {
+      vibrate(VIBRATION_PATTERNS.tap);
+      openForTable(salafIdx);
+    };
     row4.appendChild(b);
   }
   
@@ -843,22 +999,32 @@ function renderTables(){
   plusBtn.className = "table-btn";
   // Rimuovo il comportamento rosso dal tasto +
   plusBtn.textContent = "+";
-  plusBtn.onclick = ()=> openCustomTablesPopup();
+  plusBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomTablesPopup();
+  };
   row4.appendChild(plusBtn);
   
   const refillBtn = document.createElement('button');
   refillBtn.className = "utility-btn";
   refillBtn.textContent = "REFILL";
   refillBtn.style.background = "#0099ff !important"; // Colore blu come categoria FRIGO
-  refillBtn.onclick = ()=> openRefillPopup();
+  refillBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openRefillSimple();
+  };
   row4.appendChild(refillBtn);
   
   const spesaBtn = document.createElement('button');
   spesaBtn.className = "utility-btn";
   spesaBtn.textContent = "SPESA";
   spesaBtn.style.background = "#00aa00 !important"; // Colore verde
-  spesaBtn.onclick = ()=> openSpesaPopup();
+  spesaBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openSpesaPopup();
+  };
   row4.appendChild(spesaBtn);
+  
   
   container.appendChild(row4);
 }
@@ -877,7 +1043,10 @@ function renderSavedButtons(){
     let pressTimer;
     
     // Click normale = apri ordine
-    b.onclick = ()=> openForSaved(s.id);
+    b.onclick = ()=> {
+      vibrate(VIBRATION_PATTERNS.tap);
+      openForSaved(s.id);
+    };
     
     // Pressione lunga = rinomina ordine
     b.addEventListener('touchstart', (e) => {
@@ -923,11 +1092,550 @@ function renderSavedButtons(){
   });
 }
 
-/* Popup Refill */
+/* Popup Refill - Versione Semplice */
+function openRefillSimple(){
+  currentTarget = {type:null, id:null};
+  
+  // Setup popup come SPESA
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  popupTitle.textContent = "REFILL - Seleziona Categoria";
+  orderList.innerHTML = "";
+  
+  // Crea lista semplice delle categorie
+  const categories = [
+    { key: 'c1', name: 'CAFFÈ', color: '#888' },
+    { key: 'c2', name: 'SPINA', color: '#ff8800' },
+    { key: 'c3', name: 'FRIGO', color: '#0099ff' },
+    { key: 'c4', name: 'SUPER', color: '#aaaa00' },
+    { key: 'c5', name: 'SNACK', color: '#ff0000' },
+    { key: 'manutenzione', name: 'MANUTENZIONE', color: '#8800aa' }
+  ];
+  
+  // Container per centrare i bottoni
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.padding = '10px';
+  
+  categories.forEach(cat => {
+    const div = document.createElement('div');
+    console.log(`🔄 Creando bottone REFILL ${cat.name} con:`, {
+      font: fontSettings.refill.font,
+      size: fontSettings.refill.size,
+      color: fontSettings.refill.color,
+      padding: fontSettings.refill.padding
+    });
+    div.style.width = '50%';
+    div.style.padding = fontSettings.refill.padding + 'px';
+    div.style.margin = '5px 0';
+    div.style.background = cat.color;
+    div.style.borderRadius = '8px';
+    div.style.cursor = 'pointer';
+    div.style.textAlign = 'center';
+    div.style.fontWeight = '700';
+    div.style.fontSize = fontSettings.refill.size + 'px';
+    div.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    div.style.color = fontSettings.refill.color;
+    div.textContent = cat.name;
+    
+    div.onclick = () => {
+      vibrate(VIBRATION_PATTERNS.tap);
+      if(cat.key === 'manutenzione'){
+        openManutenzioneRefill();
+      } else {
+        openRefillCategory(cat.key, cat.name, cat.color);
+      }
+    };
+    
+    container.appendChild(div);
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const resetAllBtn = document.createElement('button');
+  resetAllBtn.textContent = 'Reset Tutto';
+  resetAllBtn.style.background = '#aa0000';
+  resetAllBtn.style.color = '#fff';
+  resetAllBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.warning);
+    showConfirm('Confermi il reset di TUTTE le categorie REFILL?', ()=>{
+      vibrate(VIBRATION_PATTERNS.success);
+      // Reset completo di refillList
+      Object.keys(refillList).forEach(key => {
+        delete refillList[key];
+      });
+      saveData();
+      // Riapri il popup per vedere i cambiamenti
+      openRefillSimple();
+    }, 'Reset Completo REFILL');
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); closePopup(); };
+  
+  actionsDiv.appendChild(resetAllBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+function openManutenzioneRefill(){
+  popupTitle.textContent = "REFILL - MANUTENZIONE";
+  orderList.innerHTML = "";
+  
+  // Lista prodotti manutenzione
+  const manutenzioneProducts = [
+    'CARTA MANI',
+    'CARTA IGIENICA', 
+    'SAPONE LIQUIDO',
+    'SACCHI GRANDI',
+    'SACCHI PICCOLI',
+    'DET PAVIMENTI',
+    'DET BAGNI',
+    'DET SUPERFICI',
+    'DET ACCIAIO',
+    'SPUGNE GRANDI',
+    'SPUGNE PICCOLE',
+    'SPUGNE PIATTE',
+    'LAVABICCHIERI B',
+    'LAVABICCHIERI D'
+  ];
+  
+  // Container per centrare le liste prodotti
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.padding = '10px';
+  
+  manutenzioneProducts.forEach(productName => {
+    const qty = refillList[productName] || 0;
+    
+    const div = document.createElement('div');
+    div.style.width = '50%';
+    div.style.padding = '10px';
+    div.style.margin = '3px 0';
+    div.style.background = '#8800aa'; // Colore viola manutenzione
+    div.style.borderRadius = '5px';
+    div.style.display = 'flex';
+    div.style.justifyContent = 'space-between';
+    div.style.alignItems = 'center';
+    div.style.cursor = 'pointer';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = productName;
+    nameSpan.style.color = '#fff';
+    nameSpan.style.fontWeight = '700';
+    nameSpan.style.fontSize = '14px';
+    
+    const qtySpan = document.createElement('span');
+    qtySpan.textContent = qty;
+    qtySpan.style.color = '#fff';
+    qtySpan.style.fontWeight = '700';
+    
+    // Gestione tap normale e prolungato
+    let pressTimer;
+    let isLongPress = false;
+    
+    // Desktop events
+    div.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isLongPress = false;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        vibrate(VIBRATION_PATTERNS.warning);
+        if(!refillList[productName]) refillList[productName] = 0;
+        if(refillList[productName] > 0) {
+          refillList[productName]--;
+          qtySpan.textContent = refillList[productName];
+          saveData();
+        }
+      }, 500); // 500ms per tap prolungato
+    });
+    
+    div.addEventListener('mouseup', (e) => {
+      e.preventDefault();
+      clearTimeout(pressTimer);
+      if(!isLongPress) {
+        // Tap normale: +1
+        vibrate(VIBRATION_PATTERNS.tap);
+        if(!refillList[productName]) refillList[productName] = 0;
+        refillList[productName]++;
+        qtySpan.textContent = refillList[productName];
+        saveData();
+      }
+    });
+    
+    div.addEventListener('mouseleave', () => {
+      clearTimeout(pressTimer);
+    });
+    
+    // Mobile events
+    div.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isLongPress = false;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        vibrate(VIBRATION_PATTERNS.warning);
+        if(!refillList[productName]) refillList[productName] = 0;
+        if(refillList[productName] > 0) {
+          refillList[productName]--;
+          qtySpan.textContent = refillList[productName];
+          saveData();
+        }
+      }, 500);
+    });
+    
+    div.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      clearTimeout(pressTimer);
+      if(!isLongPress) {
+        // Tap normale: +1
+        vibrate(VIBRATION_PATTERNS.tap);
+        if(!refillList[productName]) refillList[productName] = 0;
+        refillList[productName]++;
+        qtySpan.textContent = refillList[productName];
+        saveData();
+      }
+    });
+    
+    div.appendChild(nameSpan);
+    div.appendChild(qtySpan);
+    container.appendChild(div);
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Indietro';
+  backBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); openRefillSimple(); };
+  
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = 'Reset';
+  resetBtn.style.background = '#aa0000';
+  resetBtn.style.color = '#fff';
+  resetBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.warning);
+    showConfirm('Confermi il reset di MANUTENZIONE?', ()=>{
+      vibrate(VIBRATION_PATTERNS.success);
+      // Reset solo prodotti manutenzione
+      manutenzioneProducts.forEach(product => {
+        delete refillList[product];
+      });
+      saveData();
+      // Riapri la lista per vedere i cambiamenti
+      openManutenzioneRefill();
+    }, 'Reset MANUTENZIONE');
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); closePopup(); };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(resetBtn);
+  actionsDiv.appendChild(closeBtn);
+}
+
+function openRefillCategory(categoryKey, categoryName, categoryColor){
+  popupTitle.textContent = `REFILL - ${categoryName}`;
+  orderList.innerHTML = "";
+  
+  const products = CATALOG[categoryKey] || [];
+  
+  if(products.length === 0){
+    orderList.innerHTML = "<div style='padding:20px;text-align:center;color:#fff;'>Nessun prodotto in questa categoria</div>";
+  } else {
+    // Container per centrare le liste prodotti
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.padding = '10px';
+    
+    // Array per raccogliere tutti i prodotti (inclusi quelli nelle sottocategorie)
+    const allProducts = [];
+    
+    products.forEach(product => {
+      // Se il prodotto ha una sottocategoria, espandi SOLO i suoi prodotti (non il base)
+      if(subcategories[product.name]){
+        subcategories[product.name].forEach(subProduct => {
+          allProducts.push({ name: `${product.name} ${subProduct.name}`, price: subProduct.price });
+        });
+      } else {
+        // Aggiungi il prodotto base solo se NON ha sottocategorie
+        allProducts.push(product);
+      }
+    });
+    
+    allProducts.forEach(product => {
+      const qty = refillList[product.name] || 0;
+      
+      const div = document.createElement('div');
+      div.style.width = '50%';
+      div.style.padding = '10px';
+      div.style.margin = '3px 0';
+      div.style.background = categoryColor;
+      div.style.borderRadius = '5px';
+      div.style.display = 'flex';
+      div.style.justifyContent = 'space-between';
+      div.style.alignItems = 'center';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = product.name;
+      nameSpan.style.color = '#fff';
+      nameSpan.style.fontWeight = '700';
+      nameSpan.style.fontSize = '14px'; // Leggermente più piccolo per le sottocategorie
+      
+      const qtySpan = document.createElement('span');
+      qtySpan.textContent = qty;
+      qtySpan.style.color = '#fff';
+      qtySpan.style.fontWeight = '700';
+      
+      div.appendChild(nameSpan);
+      div.appendChild(qtySpan);
+      container.appendChild(div);
+    });
+    
+    orderList.appendChild(container);
+  }
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Indietro';
+  backBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); openRefillSimple(); };
+  
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = 'Reset';
+  resetBtn.style.background = '#aa0000';
+  resetBtn.style.color = '#fff';
+  resetBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.warning);
+    showConfirm(`Confermi il reset di ${categoryName}?`, ()=>{
+      vibrate(VIBRATION_PATTERNS.success);
+      // Reset solo prodotti di questa categoria
+      const catalogProducts = CATALOG[categoryKey] || [];
+      catalogProducts.forEach(product => {
+        // Reset prodotto base
+        delete refillList[product.name];
+        // Reset sottocategorie se esistono
+        if(subcategories[product.name]){
+          subcategories[product.name].forEach(subProduct => {
+            delete refillList[`${product.name} ${subProduct.name}`];
+          });
+        }
+      });
+      saveData();
+      // Riapri la lista per vedere i cambiamenti
+      openRefillCategory(categoryKey, categoryName, categoryColor);
+    }, `Reset ${categoryName}`);
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); closePopup(); };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(resetBtn);
+  actionsDiv.appendChild(closeBtn);
+}
+
+/* Popup Refill - Versione Standard (DEPRECATA) */
+function openRefillStandardPopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi elementi non necessari
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = "REFILL - Seleziona Categoria";
+  
+  // Svuota la lista ordini (area principale)
+  orderList.innerHTML = "";
+  
+  // Renderizza le categorie REFILL
+  renderRefillCategories();
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    closePopup();
+  };
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+function renderRefillCategories(){
+  const categories = [
+    { key: 'c1', name: 'CAFFÈ', color: '#888', catalog: CATALOG.c1 },
+    { key: 'c2', name: 'SPINA', color: '#ff8800', catalog: CATALOG.c2 },
+    { key: 'c3', name: 'FRIGO', color: '#0099ff', catalog: CATALOG.c3 },
+    { key: 'c4', name: 'SUPER', color: '#aaaa00', catalog: CATALOG.c4 },
+    { key: 'c5', name: 'SNACK', color: '#ff0000', catalog: CATALOG.c5 }
+  ];
+  
+  categories.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'order-row';
+    row.style.display = 'grid';
+    row.style.gridTemplateColumns = '1fr auto';
+    row.style.alignItems = 'center';
+    row.style.padding = '15px';
+    row.style.background = cat.color;
+    row.style.borderRadius = '8px';
+    row.style.margin = '5px 0';
+    row.style.cursor = 'pointer';
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = cat.name;
+    nameDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    nameDiv.style.fontSize = fontSettings.refill.size + 'px';
+    nameDiv.style.fontWeight = '700';
+    nameDiv.style.color = fontSettings.refill.color;
+    
+    const arrowDiv = document.createElement('div');
+    arrowDiv.textContent = '→';
+    arrowDiv.style.fontSize = '20px';
+    arrowDiv.style.fontWeight = '700';
+    arrowDiv.style.color = fontSettings.refill.color;
+    
+    row.appendChild(nameDiv);
+    row.appendChild(arrowDiv);
+    
+    row.onclick = () => {
+      vibrate(VIBRATION_PATTERNS.tap);
+      openRefillCategoryStandard(cat.key, cat.name, cat.color, cat.catalog);
+    };
+    
+    orderList.appendChild(row);
+  });
+}
+
+function openRefillCategoryStandard(categoryKey, categoryName, categoryColor, catalogProducts){
+  // Titolo popup
+  popupTitle.textContent = `REFILL - ${categoryName}`;
+  
+  // Svuota la lista ordini
+  orderList.innerHTML = "";
+  
+  // Array per raccogliere tutti i prodotti (inclusi quelli nelle sottocategorie)
+  const allProducts = [];
+  
+  catalogProducts.forEach(product => {
+    // Se il prodotto ha una sottocategoria, espandi i suoi prodotti
+    if(subcategories[product.name]){
+      subcategories[product.name].forEach(subProduct => {
+        allProducts.push({ name: `${product.name} ${subProduct.name}`, price: subProduct.price });
+      });
+    }
+    // Aggiungi anche il prodotto base
+    allProducts.push(product);
+  });
+  
+  // Renderizza prodotti come righe ordine
+  allProducts.forEach(product => {
+    const qty = refillList[product.name] || 0;
+    
+    const row = document.createElement('div');
+    row.className = 'order-row';
+    row.style.display = 'grid';
+    row.style.gridTemplateColumns = '1fr auto';
+    row.style.alignItems = 'center';
+    row.style.padding = '10px';
+    row.style.background = 'rgba(255,255,255,0.05)';
+    row.style.borderRadius = '4px';
+    row.style.margin = '2px 0';
+    row.style.borderLeft = `4px solid ${categoryColor}`;
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = product.name;
+    nameDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    nameDiv.style.fontSize = fontSettings.refill.size + 'px';
+    nameDiv.style.fontWeight = '700';
+    nameDiv.style.color = fontSettings.refill.color;
+    
+    const qtyDiv = document.createElement('div');
+    qtyDiv.textContent = `Qty: ${qty}`;
+    qtyDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    qtyDiv.style.fontSize = (fontSettings.refill.size - 2) + 'px';
+    qtyDiv.style.fontWeight = '700';
+    qtyDiv.style.color = categoryColor;
+    
+    row.appendChild(nameDiv);
+    row.appendChild(qtyDiv);
+    orderList.appendChild(row);
+  });
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Indietro';
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openRefillStandardPopup();
+  };
+  
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = 'Reset';
+  resetBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.warning);
+    showConfirm(`Confermi il reset di ${categoryName}?`, ()=>{
+      vibrate(VIBRATION_PATTERNS.success);
+      catalogProducts.forEach(product => {
+        delete refillList[product.name];
+      });
+      saveData();
+      openRefillCategoryStandard(categoryKey, categoryName, categoryColor, catalogProducts);
+    }, `Reset ${categoryName}`);
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    closePopup();
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(resetBtn);
+  actionsDiv.appendChild(closeBtn);
+}
+
+/* Popup Refill - Versione Overlay (DEPRECATA) */
 function openRefillPopup(){
   currentTarget = {type:null, id:null};
   
-  // Crea overlay a schermo intero
+  // Crea overlay 90% schermo con background come SPESA
   const refillOverlay = document.createElement('div');
   refillOverlay.id = 'refill-overlay';
   refillOverlay.style.position = 'fixed';
@@ -935,26 +1643,194 @@ function openRefillPopup(){
   refillOverlay.style.left = '0';
   refillOverlay.style.right = '0';
   refillOverlay.style.bottom = '0';
-  refillOverlay.style.background = '#000';
+  refillOverlay.style.background = 'rgba(0,0,0,0.95)';
   refillOverlay.style.zIndex = '9999';
-  refillOverlay.style.padding = '20px';
-  refillOverlay.style.overflowY = 'auto';
+  refillOverlay.style.display = 'flex';
+  refillOverlay.style.alignItems = 'center';
+  refillOverlay.style.justifyContent = 'center';
+  // Evita che i click del popup propaghino a listener globali (solo stopPropagation)
+  refillOverlay.addEventListener('click', (e)=> e.stopPropagation());
+  refillOverlay.addEventListener('mousedown', (e)=> e.stopPropagation());
+  refillOverlay.addEventListener('touchstart', (e)=> e.stopPropagation(), { passive: true });
+  
+  // Container interno 90% con background personalizzato
+  const refillContent = document.createElement('div');
+  refillContent.style.background = `#000 url("${currentBackground}") no-repeat center center`;
+  refillContent.style.backgroundSize = 'cover';
+  refillContent.style.width = '90vw';
+  refillContent.style.height = '90vh';
+  refillContent.style.borderRadius = '12px';
+  refillContent.style.border = '2px solid #444';
+  refillContent.style.padding = '20px';
+  refillContent.style.overflowY = 'auto';
+  refillContent.style.display = 'flex';
+  refillContent.style.flexDirection = 'column';
+  refillContent.style.alignItems = 'center';
+  refillContent.style.justifyContent = 'center';
+  // Blocca propagazione eventi all'esterno del contenitore
+  refillContent.addEventListener('click', (e)=> e.stopPropagation());
+  refillContent.addEventListener('mousedown', (e)=> e.stopPropagation());
+  refillContent.addEventListener('touchstart', (e)=> e.stopPropagation(), { passive: true });
   
   // Titolo
   const title = document.createElement('div');
-  title.textContent = 'REFILL - Prodotti Frigo';
-  title.style.fontSize = '24px';
+  title.textContent = 'REFILL - Seleziona Categoria';
+  title.style.fontSize = (fontSettings.refill.size + 6) + 'px';
+  title.style.setProperty('font-family', fontSettings.refill.font, 'important');
+  title.style.fontWeight = '700';
+  title.style.textAlign = 'center';
+  title.style.marginBottom = '30px';
+  title.style.color = fontSettings.refill.color;
+  refillContent.appendChild(title);
+  
+  // Container bottoni categorie (50% larghezza, centrati)
+  const categoriesContainer = document.createElement('div');
+  categoriesContainer.style.width = '50%';
+  categoriesContainer.style.maxWidth = '400px';
+  categoriesContainer.style.display = 'flex';
+  categoriesContainer.style.flexDirection = 'column';
+  categoriesContainer.style.gap = '15px';
+  
+  // Definizione categorie
+  const categories = [
+    { key: 'c1', name: 'CAFFÈ', color: '#888', catalog: CATALOG.c1 },
+    { key: 'c2', name: 'SPINA', color: '#ff8800', catalog: CATALOG.c2 },
+    { key: 'c3', name: 'FRIGO', color: '#0099ff', catalog: CATALOG.c3 },
+    { key: 'c4', name: 'SUPER', color: '#aaaa00', catalog: CATALOG.c4 },
+    { key: 'c5', name: 'SNACK', color: '#ff0000', catalog: CATALOG.c5 }
+  ];
+  
+  categories.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.textContent = cat.name;
+    btn.type = 'button';
+    btn.style.padding = fontSettings.refill.padding + 'px';
+    btn.style.fontSize = fontSettings.refill.size + 'px';
+    btn.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    btn.style.fontWeight = '700';
+    btn.style.background = cat.color;
+    btn.style.color = fontSettings.refill.color;
+    btn.style.border = 'none';
+    btn.style.borderRadius = '10px';
+    btn.style.cursor = 'pointer';
+    btn.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+    btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    
+    btn.onmouseenter = () => {
+      btn.style.transform = 'translateY(-3px)';
+      btn.style.boxShadow = '0 6px 16px rgba(0,0,0,0.4)';
+    };
+    btn.onmouseleave = () => {
+      btn.style.transform = 'translateY(0)';
+      btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    };
+    
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+      vibrate(VIBRATION_PATTERNS.tap);
+      openRefillCategoryList(cat.key, cat.name, cat.color, cat.catalog);
+    };
+    
+    categoriesContainer.appendChild(btn);
+  });
+  
+  refillContent.appendChild(categoriesContainer);
+  
+  // Bottone chiudi in basso
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Chiudi';
+  closeBtn.className = 'utility-btn';
+  closeBtn.style.marginTop = '10px';
+  closeBtn.type = 'button';
+  closeBtn.onclick = (e)=> {
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+    vibrate(VIBRATION_PATTERNS.tap);
+    disableRefillHistoryTrap();
+    document.getElementById('refill-overlay').remove();
+  };
+  
+  refillContent.appendChild(closeBtn);
+  refillOverlay.appendChild(refillContent);
+  document.body.appendChild(refillOverlay);
+  
+  // Attiva trap per tasto back
+  enableRefillHistoryTrap();
+}
+
+function openRefillCategoryList(categoryKey, categoryName, categoryColor, catalogProducts){
+  // Rimuovi overlay precedente
+  const oldOverlay = document.getElementById('refill-overlay');
+  if(oldOverlay) oldOverlay.remove();
+  
+  // Crea nuovo overlay 90% schermo con background come SPESA
+  const refillOverlay = document.createElement('div');
+  refillOverlay.id = 'refill-overlay';
+  refillOverlay.style.position = 'fixed';
+  refillOverlay.style.top = '0';
+  refillOverlay.style.left = '0';
+  refillOverlay.style.right = '0';
+  refillOverlay.style.bottom = '0';
+  refillOverlay.style.background = 'rgba(0,0,0,0.95)';
+  refillOverlay.style.zIndex = '9999';
+  refillOverlay.style.display = 'flex';
+  refillOverlay.style.alignItems = 'center';
+  refillOverlay.style.justifyContent = 'center';
+  
+  // Container interno 90% con background personalizzato
+  const refillContent = document.createElement('div');
+  refillContent.style.background = `#000 url("${currentBackground}") no-repeat center center`;
+  refillContent.style.backgroundSize = 'cover';
+  refillContent.style.width = '90vw';
+  refillContent.style.height = '90vh';
+  refillContent.style.borderRadius = '12px';
+  refillContent.style.border = '2px solid #444';
+  refillContent.style.padding = '20px';
+  refillContent.style.overflowY = 'auto';
+  refillContent.style.display = 'flex';
+  refillContent.style.flexDirection = 'column';
+  
+  // Titolo
+  const title = document.createElement('div');
+  title.textContent = `REFILL - ${categoryName}`;
+  title.style.fontSize = (fontSettings.refill.size + 6) + 'px';
+  title.style.setProperty('font-family', fontSettings.refill.font, 'important');
   title.style.fontWeight = '700';
   title.style.textAlign = 'center';
   title.style.marginBottom = '20px';
-  title.style.color = '#fff';
-  refillOverlay.appendChild(title);
+  title.style.color = fontSettings.refill.color;
+  refillContent.appendChild(title);
   
   // Bottoni azioni
   const actionsTop = document.createElement('div');
   actionsTop.style.display = 'flex';
   actionsTop.style.gap = '10px';
   actionsTop.style.marginBottom = '20px';
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Indietro';
+  backBtn.style.background = '#555';
+  backBtn.style.flex = '1';
+  backBtn.style.padding = '15px';
+  backBtn.style.fontSize = '16px';
+  backBtn.style.fontWeight = '700';
+  backBtn.style.border = 'none';
+  backBtn.style.borderRadius = '8px';
+  backBtn.style.color = '#fff';
+  backBtn.style.cursor = 'pointer';
+  backBtn.type = 'button';
+  backBtn.onclick = (e)=> {
+    e.preventDefault();
+    e.stopPropagation();
+    vibrate(VIBRATION_PATTERNS.tap);
+    disableRefillHistoryTrap();
+    const overlay = document.getElementById('refill-overlay');
+    if(overlay) overlay.remove();
+    openRefillPopup();
+  };
   
   const resetBtn = document.createElement('button');
   resetBtn.textContent = 'Reset';
@@ -967,35 +1843,36 @@ function openRefillPopup(){
   resetBtn.style.borderRadius = '8px';
   resetBtn.style.color = '#fff';
   resetBtn.style.cursor = 'pointer';
-  resetBtn.onclick = ()=> {
-    showConfirm('Confermi il reset della lista refill?', ()=>{
-      refillList = {};
+  resetBtn.type = 'button';
+  resetBtn.onclick = (e)=> {
+    e.preventDefault();
+    e.stopPropagation();
+    vibrate(VIBRATION_PATTERNS.warning);
+    showConfirm(`Confermi il reset di ${categoryName}?`, ()=>{
+      vibrate(VIBRATION_PATTERNS.success);
+      // Reset solo prodotti di questa categoria
+      catalogProducts.forEach(product => {
+        delete refillList[product.name];
+      });
       saveData();
-      // Chiudi e riapri il popup per aggiornare
-      const overlay = document.getElementById('refill-overlay');
-      if(overlay) overlay.remove();
-      openRefillPopup();
-    }, 'Reset Refill');
+      // Riapri la lista
+      openRefillCategoryList(categoryKey, categoryName, categoryColor, catalogProducts);
+    }, `Reset ${categoryName}`);
   };
-  
-  const closeBtn = document.createElement('button');
-  closeBtn.textContent = 'Chiudi';
-  closeBtn.style.background = '#444';
-  closeBtn.style.flex = '1';
-  closeBtn.style.padding = '15px';
-  closeBtn.style.fontSize = '16px';
-  closeBtn.style.fontWeight = '700';
-  closeBtn.style.border = 'none';
-  closeBtn.style.borderRadius = '8px';
-  closeBtn.style.color = '#fff';
-  closeBtn.style.cursor = 'pointer';
-  closeBtn.onclick = ()=> {
+  closeBtn.className = 'utility-btn';
+  closeBtn.type = 'button';
+  closeBtn.onclick = (e)=> {
+    e.preventDefault();
+    e.stopPropagation();
+    vibrate(VIBRATION_PATTERNS.tap);
+    disableRefillHistoryTrap();
     document.getElementById('refill-overlay').remove();
   };
   
+  actionsTop.appendChild(backBtn);
   actionsTop.appendChild(resetBtn);
   actionsTop.appendChild(closeBtn);
-  refillOverlay.appendChild(actionsTop);
+  refillContent.appendChild(actionsTop);
   
   // Container prodotti
   const gridContainer = document.createElement('div');
@@ -1003,9 +1880,22 @@ function openRefillPopup(){
   gridContainer.style.gridTemplateColumns = '1fr 1fr';
   gridContainer.style.gap = '15px';
   
-  const frigoProducts = CATALOG.c3 || [];
+  // Array per raccogliere tutti i prodotti (inclusi quelli nelle sottocategorie)
+  const allProducts = [];
   
-  frigoProducts.forEach(product => {
+  catalogProducts.forEach(product => {
+    // Se il prodotto ha una sottocategoria, espandi i suoi prodotti
+    if(subcategories[product.name]){
+      subcategories[product.name].forEach(subProduct => {
+        allProducts.push(subProduct);
+      });
+    } else {
+      // Altrimenti aggiungi il prodotto normale
+      allProducts.push(product);
+    }
+  });
+  
+  allProducts.forEach(product => {
     const qty = refillList[product.name] || 0;
     
     const row = document.createElement('div');
@@ -1014,47 +1904,94 @@ function openRefillPopup(){
     row.style.gap = '10px';
     row.style.alignItems = 'center';
     row.style.padding = '15px';
-    row.style.background = '#0099ff';
+    row.style.background = categoryColor;
     row.style.borderRadius = '8px';
+    row.style.transition = 'transform 0.2s ease';
+    row.style.cursor = 'pointer';
+    
+    row.onmouseenter = () => {
+      row.style.transform = 'scale(1.02)';
+    };
+    row.onmouseleave = () => {
+      row.style.transform = 'scale(1)';
+    };
     
     const nameDiv = document.createElement('div');
     nameDiv.textContent = product.name;
-    nameDiv.style.fontSize = '16px';
+    nameDiv.style.fontSize = fontSettings.refill.size + 'px';
+    nameDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
     nameDiv.style.fontWeight = '700';
+    nameDiv.style.color = fontSettings.refill.color;
     
     const qtyDiv = document.createElement('div');
     qtyDiv.textContent = qty;
-    qtyDiv.style.fontSize = '20px';
+    qtyDiv.style.fontSize = (fontSettings.refill.size + 4) + 'px';
+    qtyDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
     qtyDiv.style.fontWeight = '700';
     qtyDiv.style.textAlign = 'center';
+    qtyDiv.style.color = fontSettings.refill.color;
     
     row.appendChild(nameDiv);
     row.appendChild(qtyDiv);
     gridContainer.appendChild(row);
   });
   
-  refillOverlay.appendChild(gridContainer);
+  refillContent.appendChild(gridContainer);
+  refillOverlay.appendChild(refillContent);
   document.body.appendChild(refillOverlay);
+  
+  // Attiva trap per tasto back
+  enableRefillHistoryTrap();
+}
+
+// Utilities REFILL: considera tutte le categorie di refill (c1..c5)
+function getRefillCategoryKeys(){
+  return ['c1','c2','c3','c4','c5'];
+}
+
+function getAllRefillCatalogProducts(){
+  const keys = getRefillCategoryKeys();
+  const products = [];
+  keys.forEach(k => {
+    const list = CATALOG[k] || [];
+    list.forEach(p => {
+      // espandi sottocategorie se presenti
+      if(subcategories[p.name]){
+        subcategories[p.name].forEach(sp => {
+          products.push({ name: `${p.name} ${sp.name}`, price: sp.price });
+        });
+      }
+      // aggiungi anche il prodotto base
+      products.push({ name: p.name, price: p.price });
+    });
+  });
+  return products;
+}
+
+function isRefillProductName(name){
+  // Rimuove eventuali modificatori finali (SR, M, K, S, GH)
+  let clean = name;
+  const mods = [' SR',' M',' K',' S',' GH'];
+  mods.forEach(m => {
+    if(clean.endsWith(m)) clean = clean.slice(0, -m.length);
+  });
+  const all = getAllRefillCatalogProducts();
+  return all.some(p => p.name === clean);
 }
 
 function updateRefillFromItems(items){
-  // Aumenta i prodotti FRIGO nella lista refill quando vengono pagati/consegnati
+  // Aumenta i prodotti REFILL (c1..c5) nella lista refill quando vengono pagati/consegnati
   if(!items || items.length === 0) return;
   
   items.forEach(item => {
-    // Rimuovi modificatori dal nome del prodotto (SR, M, K, S, GH)
+    // Pulisci eventuali modificatori e verifica se è un prodotto REFILL
     let productName = item.name;
     modifiersList.forEach(mod => {
       productName = productName.replace(new RegExp('\\s+' + mod + '$'), '');
     });
-    
-    // Verifica se il prodotto è nella categoria FRIGO
-    const frigoProducts = CATALOG.c3 || [];
-    const isFrigoProduct = frigoProducts.some(p => p.name === productName);
-    
-    console.log('Checking item:', item.name, '-> Clean name:', productName, 'Is FRIGO?', isFrigoProduct, 'Qty:', item.qty);
-    
-    if(isFrigoProduct){
+    const isRefill = isRefillProductName(productName);
+    console.log('Checking item:', item.name, '-> Clean name:', productName, 'Is REFILL?', isRefill, 'Qty:', item.qty);
+    if(isRefill){
       if(!refillList[productName]) refillList[productName] = 0;
       refillList[productName] += (item.qty || 1);
       console.log('Updated refillList:', productName, '=', refillList[productName]);
@@ -1063,86 +2000,268 @@ function updateRefillFromItems(items){
   saveData();
 }
 
+
 /* Popup Spesa */
 function openSpesaPopup(){
   currentTarget = {type:null, id:null};
-  // Layout verticale - non serve nascondere colonna
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi elementi non necessari
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   cassaPad.classList.add('hidden');
-  popupTitle.textContent = "SPESA - Lista Prodotti";
+  modifiersDiv.style.display = 'none';
   
-  // Renderizza la lista spesa basata su refillList
-  renderSpesaList();
+  // Titolo popup
+  popupTitle.textContent = "SPESA";
+  
+  // Svuota la lista ordini (area principale)
+  orderList.innerHTML = "";
   
   // Bottoni azioni
   actionsDiv.innerHTML = "";
   
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
-  closeBtn.onclick = closePopup;
+  closeBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    closePopup();
+  };
   
   actionsDiv.appendChild(closeBtn);
   
-  popup.style.display = 'flex';
+  showPopup();
+}
+
+function printSpesaList(){
+  // Crea una finestra di stampa con la lista spesa per TUTTE le categorie refill
+  const allRefillProducts = getAllRefillCatalogProducts();
+  const productsToShow = allRefillProducts.filter(product => {
+    const qty = refillList[product.name] || 0;
+    return qty > 0;
+  });
+  
+  if(productsToShow.length === 0){
+    alert('Nessun prodotto da stampare!');
+    return;
+  }
+  
+  let printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Lista Spesa - Break Billiard Club</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { text-align: center; color: #00aa00; }
+        .date { text-align: center; color: #666; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #00aa00; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .qty { text-align: center; font-weight: bold; font-size: 18px; }
+        .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+        @media print {
+          button { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>🛒 Lista Spesa</h1>
+      <div class="date">${new Date().toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Prodotto</th>
+            <th style="width: 100px; text-align: center;">Quantità</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  productsToShow.forEach(product => {
+    const qty = refillList[product.name];
+    printContent += `
+      <tr>
+        <td>${product.name}</td>
+        <td class="qty">${qty}</td>
+      </tr>
+    `;
+  });
+  
+  printContent += `
+        </tbody>
+      </table>
+      <div class="footer">
+        Break Billiard Club - Lista generata automaticamente
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  
+  // Attendi il caricamento e stampa
+  printWindow.onload = () => {
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
 }
 
 function renderSpesaList(){
   orderList.innerHTML = "";
   
-  // Container con griglia a 2 colonne
-  const gridContainer = document.createElement('div');
-  gridContainer.style.display = "grid";
-  gridContainer.style.gridTemplateColumns = "1fr 1fr";
-  gridContainer.style.gap = "10px";
-  
-  // Mostra SOLO i prodotti FRIGO che hanno quantità > 0
-  const frigoProducts = CATALOG.c3 || [];
+  // Mostra i prodotti REFILL (c1..c5) che hanno quantità > 0
+  const allRefillProducts = getAllRefillCatalogProducts();
   
   // Filtra solo prodotti con quantità > 0
-  const productsToShow = frigoProducts.filter(product => {
+  const productsToShow = allRefillProducts.filter(product => {
     const qty = refillList[product.name] || 0;
     return qty > 0;
   });
   
   if(productsToShow.length === 0){
     const emptyMsg = document.createElement('div');
-    emptyMsg.textContent = "Nessun prodotto da acquistare";
-    emptyMsg.style.textAlign = "center";
-    emptyMsg.style.padding = "20px";
-    emptyMsg.style.fontSize = "16px";
-    emptyMsg.style.color = "#fff";
+    emptyMsg.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:48px;margin-bottom:20px;">🛒</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Nessun prodotto da acquistare</div>
+        <div style="font-size:14px;color:#aaa;">Aggiungi prodotti alle categorie Refill (Caffè, Spina, Frigo, Super, Snack) per popolare la lista</div>
+      </div>
+    `;
     orderList.appendChild(emptyMsg);
     return;
   }
+  
+  // Intestazione con totale prodotti
+  const header = document.createElement('div');
+  header.style.background = "rgba(0,170,0,0.2)";
+  header.style.padding = "15px";
+  header.style.borderRadius = "8px";
+  header.style.marginBottom = "15px";
+  header.style.textAlign = "center";
+  header.innerHTML = `
+    <div style="font-size:16px;font-weight:700;color:#00ff00;">
+      📦 Totale prodotti: ${productsToShow.length}
+    </div>
+    <div style="font-size:14px;color:#aaa;margin-top:5px;">
+      Quantità totale: ${Object.values(refillList).reduce((a,b)=>a+b,0)}
+    </div>
+  `;
+  orderList.appendChild(header);
+  
+  // Container con griglia a 1 colonna per lista più leggibile
+  const gridContainer = document.createElement('div');
+  gridContainer.style.display = "flex";
+  gridContainer.style.flexDirection = "column";
+  gridContainer.style.gap = "10px";
   
   productsToShow.forEach(product => {
     const qty = refillList[product.name];
     
     const row = document.createElement('div');
     row.style.display = "grid";
-    row.style.gridTemplateColumns = "2fr 1fr";
-    row.style.gap = "8px";
+    row.style.gridTemplateColumns = "1fr auto";
+    row.style.gap = "15px";
     row.style.alignItems = "center";
-    row.style.padding = "10px";
-    row.style.borderBottom = "1px solid #444";
-    row.style.background = "#00aa00";
-    row.style.borderRadius = "6px";
+    row.style.padding = "15px";
+    row.style.background = "linear-gradient(135deg, #00aa00 0%, #008800 100%)";
+    row.style.borderRadius = "10px";
+    row.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+    row.style.transition = "transform 0.2s ease, box-shadow 0.2s ease";
+    row.style.cursor = "pointer";
+    
+    row.onmouseenter = () => {
+      row.style.transform = "translateY(-2px)";
+      row.style.boxShadow = "0 4px 12px rgba(0,170,0,0.4)";
+    };
+    row.onmouseleave = () => {
+      row.style.transform = "translateY(0)";
+      row.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+    };
     
     const nameDiv = document.createElement('div');
     nameDiv.textContent = product.name;
-    nameDiv.style.fontSize = "14px";
+    nameDiv.style.fontSize = "16px";
     nameDiv.style.fontWeight = "700";
+    nameDiv.style.color = "#fff";
     
-    const qtyDiv = document.createElement('div');
-    qtyDiv.textContent = qty;
-    qtyDiv.style.fontSize = "16px";
-    qtyDiv.style.fontWeight = "700";
-    qtyDiv.style.textAlign = "center";
+    // Controlli quantità
+    const qtyControls = document.createElement('div');
+    qtyControls.style.display = "flex";
+    qtyControls.style.alignItems = "center";
+    qtyControls.style.gap = "10px";
+    
+    const minusBtn = document.createElement('button');
+    minusBtn.textContent = "−";
+    minusBtn.style.width = "35px";
+    minusBtn.style.height = "35px";
+    minusBtn.style.borderRadius = "50%";
+    minusBtn.style.border = "2px solid #fff";
+    minusBtn.style.background = "rgba(0,0,0,0.3)";
+    minusBtn.style.color = "#fff";
+    minusBtn.style.fontSize = "20px";
+    minusBtn.style.fontWeight = "700";
+    minusBtn.style.cursor = "pointer";
+    minusBtn.style.transition = "all 0.2s ease";
+    minusBtn.onclick = (e) => {
+      e.stopPropagation();
+      vibrate(VIBRATION_PATTERNS.tap);
+      if(refillList[product.name] > 0) {
+        refillList[product.name]--;
+        if(refillList[product.name] === 0) {
+          delete refillList[product.name];
+        }
+        saveData();
+        renderSpesaList();
+      }
+    };
+    
+    const qtyDisplay = document.createElement('div');
+    qtyDisplay.textContent = qty;
+    qtyDisplay.style.fontSize = "24px";
+    qtyDisplay.style.fontWeight = "700";
+    qtyDisplay.style.color = "#fff";
+    qtyDisplay.style.minWidth = "40px";
+    qtyDisplay.style.textAlign = "center";
+    qtyDisplay.style.background = "rgba(0,0,0,0.3)";
+    qtyDisplay.style.padding = "5px 10px";
+    qtyDisplay.style.borderRadius = "8px";
+    
+    const plusBtn = document.createElement('button');
+    plusBtn.textContent = "+";
+    plusBtn.style.width = "35px";
+    plusBtn.style.height = "35px";
+    plusBtn.style.borderRadius = "50%";
+    plusBtn.style.border = "2px solid #fff";
+    plusBtn.style.background = "rgba(255,255,255,0.2)";
+    plusBtn.style.color = "#fff";
+    plusBtn.style.fontSize = "20px";
+    plusBtn.style.fontWeight = "700";
+    plusBtn.style.cursor = "pointer";
+    plusBtn.style.transition = "all 0.2s ease";
+    plusBtn.onclick = (e) => {
+      e.stopPropagation();
+      vibrate(VIBRATION_PATTERNS.tap);
+      refillList[product.name]++;
+      saveData();
+      renderSpesaList();
+    };
+    
+    qtyControls.appendChild(minusBtn);
+    qtyControls.appendChild(qtyDisplay);
+    qtyControls.appendChild(plusBtn);
     
     row.appendChild(nameDiv);
-    row.appendChild(qtyDiv);
+    row.appendChild(qtyControls);
     
     gridContainer.appendChild(row);
   });
@@ -1319,7 +2438,7 @@ function openCustomTablesPopup(){
   popupMain.appendChild(overlay);
   
   // Mostra il popup
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* aperture modale */
@@ -1350,7 +2469,7 @@ function openForTable(tableIndex){
   modifiersDiv.style.display = 'grid';
   renderOrderList();
   renderActionsForSaved();
-  popup.style.display = 'flex';
+  showPopup();
 }
 function openForSaved(savedId){
   const saved = savedOrders.find(x=>x.id===savedId);
@@ -1366,7 +2485,7 @@ function openForSaved(savedId){
   modifiersDiv.style.display = 'grid';
   renderOrderList();
   renderActionsForSaved();
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* azioni */
@@ -1376,9 +2495,11 @@ function renderActionsForTable(){
   const payBtn = document.createElement('button');
   payBtn.textContent = "Pagato";
   payBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.click);
     const items = getEditingItems();
     const total = items.reduce((sum, it) => sum + ((it.price || 0) * (it.qty || 1)), 0);
     showConfirm(`Totale: €${total.toFixed(2)}`, ()=>{
+      vibrate(VIBRATION_PATTERNS.success);
       // Salva l'ordine negli evasi prima di pagare
       if(items && items.length > 0){
         evasiOrders.push({
@@ -1407,12 +2528,14 @@ function renderActionsForTable(){
   const accontoBtn = document.createElement('button');
   accontoBtn.textContent = "Acconto";
   accontoBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.click);
     openAccontoPopup();
   };
 
   const consegnatoBtn = document.createElement('button');
   consegnatoBtn.textContent = "Done";
   consegnatoBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.success);
     // Marca come consegnato e chiudi popup
     const items = getEditingItems();
     if(!items || items.length === 0) {
@@ -1434,7 +2557,10 @@ function renderActionsForTable(){
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
-  closeBtn.onclick = closePopup;
+  closeBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    closePopup();
+  };
 
   actionsDiv.appendChild(payBtn);
   actionsDiv.appendChild(accontoBtn);
@@ -1638,42 +2764,46 @@ function openAccontoPopup(){
   actionsDiv.appendChild(closeBtn);
   
   popupTitle.textContent = "Acconto";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function closePopup(){
-  popup.style.display = 'none';
-  subcatsDiv.innerHTML = "";
-  tempoPad.classList.add('hidden');
-  cassaPad.classList.add('hidden');
-  
-  // Ripristina lo stile normale di orderList (per refill a schermo intero)
-  orderList.style.position = "";
-  orderList.style.top = "";
-  orderList.style.left = "";
-  orderList.style.right = "";
-  orderList.style.bottom = "";
-  orderList.style.background = "";
-  orderList.style.zIndex = "";
-  orderList.style.padding = "";
-  orderList.style.overflowY = "";
-  
-  // Rimuovi classe fullscreen dal popup e popup-content
-  popup.classList.remove('fullscreen-popup');
-  const popupContent = document.querySelector('.popup-content');
-  if(popupContent) popupContent.classList.remove('fullscreen');
-  
-  // Rimuovi l'overlay dei tavoli personalizzati se esiste
-  const overlay = document.getElementById('custom-tables-overlay');
-  if(overlay) overlay.remove();
-  
-  // Ripristina il layout normale del popup
-  const popupMain = document.querySelector('.popup-main');
-  popupMain.style.position = "";
-  
-  renderTables();
-  renderSavedButtons();
-  saveData();
+  hidePopup(() => {
+    subcatsDiv.innerHTML = "";
+    tempoPad.classList.add('hidden');
+    cassaPad.classList.add('hidden');
+    
+    // Ripristina lo stile normale di orderList (per refill a schermo intero)
+    orderList.style.position = "";
+    orderList.style.top = "";
+    orderList.style.left = "";
+    orderList.style.right = "";
+    orderList.style.bottom = "";
+    orderList.style.background = "";
+    orderList.style.zIndex = "";
+    orderList.style.padding = "";
+    orderList.style.overflowY = "";
+    
+    // Rimuovi classe fullscreen e spesa-popup dal popup e popup-content
+    popup.classList.remove('fullscreen-popup');
+    const popupContent = document.querySelector('.popup-content');
+    if(popupContent) {
+      popupContent.classList.remove('fullscreen');
+      popupContent.classList.remove('spesa-popup');
+    }
+    
+    // Rimuovi l'overlay dei tavoli personalizzati se esiste
+    const overlay = document.getElementById('custom-tables-overlay');
+    if(overlay) overlay.remove();
+    
+    // Ripristina il layout normale del popup
+    const popupMain = document.querySelector('.popup-main');
+    popupMain.style.position = "";
+    
+    renderTables();
+    renderSavedButtons();
+    saveData();
+  });
 }
 
 /* sottocategorie */
@@ -1758,6 +2888,7 @@ function getEditingItems(){
 
 /* aggiungi prodotto */
 function addCatalogProduct(name, price){
+  vibrate(VIBRATION_PATTERNS.click);
   const items = getEditingItems();
   const newItem = {name, qty:1, price: typeof price === 'number' ? price : 0, timestamp: Date.now()};
   items.push(newItem);
@@ -1770,10 +2901,8 @@ function addCatalogProduct(name, price){
     }
   }
   
-  // Aggiorna refill list SOLO quando aggiungi un prodotto FRIGO
-  const frigoProducts = CATALOG.c3 || [];
-  const isFrigoProduct = frigoProducts.some(p => p.name === name);
-  if(isFrigoProduct){
+  // Aggiorna refill list quando aggiungi un prodotto delle categorie Refill (c1..c5)
+  if(isRefillProductName(name)){
     if(!refillList[name]) refillList[name] = 0;
     refillList[name] += 1;
   }
@@ -1786,6 +2915,7 @@ function addCatalogProduct(name, price){
 /* modificatori */
 modifiersDiv.addEventListener('click', e=>{
   if(!e.target.matches('button')) return;
+  vibrate(VIBRATION_PATTERNS.tap);
   const mod = e.target.dataset && e.target.dataset.mod || e.target.textContent;
   const items = getEditingItems();
   if(!items || items.length===0) return;
@@ -1894,9 +3024,28 @@ function renderOrderList(){
     }
     
     row.onclick = ()=> {
+      vibrate(VIBRATION_PATTERNS.warning);
+      
+      // Rimuovi dal refillList se è un prodotto REFILL
+      const item = items[i];
+      let productName = item.name;
+      
+      // Rimuovi modificatori dal nome del prodotto
+      modifiersList.forEach(mod => {
+        productName = productName.replace(new RegExp('\\s+' + mod + '$'), '');
+      });
+      
+      const isRefill = isRefillProductName(productName);
+      if(isRefill && refillList[productName]){
+        refillList[productName] -= (item.qty || 1);
+        if(refillList[productName] <= 0){
+          delete refillList[productName];
+        }
+        console.log('Removed from refillList:', productName, '=', refillList[productName] || 0);
+      }
+      
       if(accontoMode){
         accontoMode = false;
-        const item = items[i];
         const cat = detectCategory(item.name);
         if(cat && totals[cat] !== undefined){
           totals[cat] += (item.price || 0) * (item.qty || 1);
@@ -2148,7 +3297,7 @@ function openTotals(){
   actionsDiv.appendChild(closeBtn);
 
   popupTitle.textContent = "Totali";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* Evasi */
@@ -2282,7 +3431,7 @@ function openEvasi(){
   actionsDiv.appendChild(closeBtn);
 
   popupTitle.textContent = "Ordini Evasi";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function exportEvasiToCSV(){
@@ -2340,6 +3489,7 @@ function applyBackground(){
 
 /* Settings */
 function openSettings(){
+  console.log('🔧 openSettings() chiamata');
   currentTarget = {type:null, id:null};
   // Layout verticale - non serve nascondere colonna
   if(categoriesDiv) categoriesDiv.style.display = 'none';
@@ -2399,7 +3549,7 @@ function openSettings(){
   actionsDiv.appendChild(closeBtn);
 
   popupTitle.textContent = "Settings";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* Background Settings */
@@ -2489,7 +3639,7 @@ function openBackgroundSettings(){
   actionsDiv.appendChild(closeBtn);
 
   popupTitle.textContent = "Sfondi";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* Font Settings */
@@ -2569,7 +3719,7 @@ function openFontSettings(){
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Cambia Font";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function applyFont(){
@@ -2663,6 +3813,7 @@ function applyFont(){
     .confirm-buttons button {
       font-size: ${fontSettings.conferma.size}px !important;
     }
+    
     
     /* Titoli popup */
     .popup-header h3 {
@@ -2809,143 +3960,119 @@ function openFontSizeSettings(){
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Dimensione Testo";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* Customize Font Settings */
 function openCustomizeFontSettings(){
+  console.log('🎨 openCustomizeFontSettings() chiamata');
   orderList.innerHTML = "";
   
   const title = document.createElement('div');
-  title.textContent = "Personalizza Font, Dimensione, Padding e Colore:";
+  title.textContent = "🎨 Personalizza Tasti per Categoria";
   title.style.fontWeight = "700";
   title.style.fontSize = "18px";
-  title.style.marginBottom = "15px";
+  title.style.marginBottom = "20px";
+  title.style.textAlign = "center";
   orderList.appendChild(title);
 
-  // Opzione TUTTI all'inizio
-  const allBox = document.createElement('div');
-  allBox.style.border = "3px solid #00ff00";
-  allBox.style.borderRadius = "8px";
-  allBox.style.padding = "15px";
-  allBox.style.marginBottom = "20px";
-  allBox.style.background = "#004400";
-  
-  const allLabel = document.createElement('div');
-  allLabel.textContent = "🌟 TUTTI (modifica tutte le categorie insieme)";
-  allLabel.style.fontWeight = "700";
-  allLabel.style.marginBottom = "10px";
-  allLabel.style.fontSize = "18px";
-  allLabel.style.textAlign = "center";
-  allBox.appendChild(allLabel);
-  
-  const allButtonsDiv = document.createElement('div');
-  allButtonsDiv.style.display = "flex";
-  allButtonsDiv.style.gap = "8px";
-  
-  const allFontBtn = document.createElement('button');
-  allFontBtn.textContent = "Font per Tutti";
-  allFontBtn.style.flex = "1";
-  allFontBtn.onclick = ()=> openSelectFontForAll();
-  
-  const allSizeBtn = document.createElement('button');
-  allSizeBtn.textContent = "Dimensione per Tutti";
-  allSizeBtn.style.flex = "1";
-  allSizeBtn.onclick = ()=> openSelectSizeForAll();
-  
-  const allPaddingBtn = document.createElement('button');
-  allPaddingBtn.textContent = "Padding per Tutti";
-  allPaddingBtn.style.flex = "1";
-  allPaddingBtn.onclick = ()=> openSelectPaddingForAll();
-
-  const allColorBtn = document.createElement('button');
-  allColorBtn.textContent = "Colore per Tutti";
-  allColorBtn.style.flex = "1";
-  allColorBtn.onclick = ()=> openSelectColorForAll();
-  
-  allButtonsDiv.appendChild(allFontBtn);
-  allButtonsDiv.appendChild(allSizeBtn);
-  allButtonsDiv.appendChild(allPaddingBtn);
-  allButtonsDiv.appendChild(allColorBtn);
-  allBox.appendChild(allButtonsDiv);
-  
-  orderList.appendChild(allBox);
-
   const categories = [
-    {key: "utility", label: "Bottoni Utility (TOTALI, STORICO, EVASI, SETTINGS, REFILL, SPESA)"},
-    {key: "tavoli", label: "Bottoni Tavoli (TAV-1, TAV-2, BANCO, SALA, SALAF, +)"},
-    {key: "ordiniSalvati", label: "Bottoni Ordini Salvati (in alto a sinistra)"},
-    {key: "categorie", label: "Categorie (CAFFÈ, SPINA, FRIGO, ecc.)"},
-    {key: "sottocategorie", label: "Sottocategorie (GRAPPA, SAMBUCA, ecc.)"},
-    {key: "modificatori", label: "Modificatori (SR, M, K, S, GH)"},
-    {key: "azioni", label: "Bottoni Azioni (PAGATO, ACCONTO, CREA ORDINE, CHIUDI)"},
-    {key: "ordini", label: "Lista Ordini (prodotti e prezzi)"},
-    {key: "conferma", label: "Popup Conferma (titolo, testo, bottoni)"}
+    {key: "utility", label: "🔧 Bottoni Utility", desc: "TOTALI, STORICO, EVASI, SETTINGS"},
+    {key: "tavoli", label: "🎯 Bottoni Tavoli", desc: "TAV-1, TAV-2, BANCO, SALA, SALAF"},
+    {key: "ordiniSalvati", label: "💾 Ordini Salvati", desc: "Bottoni in alto a sinistra"},
+    {key: "categorie", label: "📋 Categorie", desc: "CAFFÈ, SPINA, FRIGO, SUPER, SNACK"},
+    {key: "sottocategorie", label: "📝 Sottocategorie", desc: "GRAPPA, SAMBUCA, APEROL, ecc."},
+    {key: "modificatori", label: "🏷️ Modificatori", desc: "SR, M, K, S, GH"},
+    {key: "azioni", label: "⚡ Azioni", desc: "PAGATO, ACCONTO, DONE, CHIUDI"},
+    {key: "ordini", label: "📄 Lista Ordini", desc: "Prodotti e prezzi nell'ordine"},
+    {key: "conferma", label: "✅ Popup Conferma", desc: "Dialoghi di conferma"},
+    {key: "refill", label: "🔄 REFILL", desc: "Bottoni nel popup REFILL"}
   ];
 
   categories.forEach(cat => {
-    const box = document.createElement('div');
-    box.style.border = "2px solid #444";
-    box.style.borderRadius = "8px";
-    box.style.padding = "15px";
-    box.style.marginBottom = "10px";
-    box.style.background = "#222";
+    const section = document.createElement('div');
+    section.className = `customize-section customize-${cat.key}`;
+    section.style.marginBottom = "12px";
+    section.style.padding = "12px";
+    section.style.background = "#222";
+    section.style.borderRadius = "8px";
+    section.style.border = "2px solid #444";
     
-    const labelDiv = document.createElement('div');
-    labelDiv.textContent = cat.label;
-    labelDiv.style.fontWeight = "700";
-    labelDiv.style.marginBottom = "10px";
-    labelDiv.style.fontSize = "16px";
-    box.appendChild(labelDiv);
+    const header = document.createElement('div');
+    header.className = `customize-header customize-header-${cat.key}`;
+    header.textContent = cat.label;
+    header.style.fontWeight = "700";
+    header.style.fontSize = "16px";
+    header.style.marginBottom = "5px";
+    section.appendChild(header);
     
-    const currentSettings = document.createElement('div');
-    currentSettings.textContent = `Font: ${fontSettings[cat.key].font.split(',')[0]} | Dimensione: ${fontSettings[cat.key].size}px | Padding: ${fontSettings[cat.key].padding}px | Colore: ${fontSettings[cat.key].color}`;
-    currentSettings.style.fontSize = "14px";
-    currentSettings.style.marginBottom = "10px";
-    currentSettings.style.color = "#aaa";
-    box.appendChild(currentSettings);
+    const desc = document.createElement('div');
+    desc.className = `customize-desc customize-desc-${cat.key}`;
+    desc.textContent = cat.desc;
+    desc.style.fontSize = "12px";
+    desc.style.color = "#aaa";
+    desc.style.marginBottom = "10px";
+    section.appendChild(desc);
     
     const buttonsDiv = document.createElement('div');
-    buttonsDiv.style.display = "flex";
-    buttonsDiv.style.gap = "8px";
+    buttonsDiv.className = `customize-buttons customize-buttons-${cat.key}`;
+    buttonsDiv.style.display = "grid";
+    buttonsDiv.style.gridTemplateColumns = "repeat(4, 1fr)";
+    buttonsDiv.style.gap = "6px";
     
+    // Font
     const fontBtn = document.createElement('button');
+    fontBtn.className = `customize-btn customize-font-btn customize-font-${cat.key}`;
     fontBtn.textContent = "Font";
-    fontBtn.style.flex = "1";
+    fontBtn.style.padding = "8px 4px";
+    fontBtn.style.fontSize = "12px";
     fontBtn.onclick = ()=> openSelectFont(cat.key, cat.label);
     
+    // Dimensione  
     const sizeBtn = document.createElement('button');
-    sizeBtn.textContent = "Dimensione";
-    sizeBtn.style.flex = "1";
+    sizeBtn.className = `customize-btn customize-size-btn customize-size-${cat.key}`;
+    sizeBtn.textContent = "Size";
+    sizeBtn.style.padding = "8px 4px";
+    sizeBtn.style.fontSize = "12px";
     sizeBtn.onclick = ()=> openSelectSize(cat.key, cat.label);
     
+    // Padding
     const paddingBtn = document.createElement('button');
-    paddingBtn.textContent = "Padding";
-    paddingBtn.style.flex = "1";
+    paddingBtn.className = `customize-btn customize-padding-btn customize-padding-${cat.key}`;
+    paddingBtn.textContent = "Pad";
+    paddingBtn.style.padding = "8px 4px";
+    paddingBtn.style.fontSize = "12px";
     paddingBtn.onclick = ()=> openSelectPadding(cat.key, cat.label);
-
+    
+    // Colore
     const colorBtn = document.createElement('button');
-    colorBtn.textContent = "Colore";
-    colorBtn.style.flex = "1";
+    colorBtn.className = `customize-btn customize-color-btn customize-color-${cat.key}`;
+    colorBtn.textContent = "Color";
+    colorBtn.style.padding = "8px 4px";
+    colorBtn.style.fontSize = "12px";
     colorBtn.onclick = ()=> openSelectColor(cat.key, cat.label);
     
     buttonsDiv.appendChild(fontBtn);
     buttonsDiv.appendChild(sizeBtn);
     buttonsDiv.appendChild(paddingBtn);
     buttonsDiv.appendChild(colorBtn);
-    box.appendChild(buttonsDiv);
+    section.appendChild(buttonsDiv);
     
-    orderList.appendChild(box);
+    orderList.appendChild(section);
   });
 
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
+  backBtn.className = "customize-back-btn";
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Personalizza Tasti";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function openSelectFont(category, label){
@@ -3001,7 +4128,7 @@ function openSelectFont(category, label){
       fontSettings[category].font = font.value;
       applyFont();
       saveData();
-      openSelectFont(category, label);
+        openSelectFont(category, label);
     };
     
     box.onmouseenter = ()=> {
@@ -3017,11 +4144,14 @@ function openSelectFont(category, label){
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Seleziona Font";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function openSelectSize(category, label){
@@ -3053,7 +4183,7 @@ function openSelectSize(category, label){
       fontSettings[category].size = size;
       applyFont();
       saveData();
-      openSelectSize(category, label);
+        openSelectSize(category, label);
     };
     
     box.onmouseenter = ()=> {
@@ -3069,11 +4199,14 @@ function openSelectSize(category, label){
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Seleziona Dimensione";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function openSelectPadding(category, label){
@@ -3116,7 +4249,7 @@ function openSelectPadding(category, label){
       fontSettings[category].padding = padding;
       applyFont();
       saveData();
-      openSelectPadding(category, label);
+        openSelectPadding(category, label);
     };
     
     box.onmouseenter = ()=> {
@@ -3132,11 +4265,14 @@ function openSelectPadding(category, label){
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Seleziona Padding";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* Funzioni per modificare TUTTE le categorie insieme */
@@ -3211,11 +4347,14 @@ function openSelectFontForAll(){
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Font per Tutti";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function openSelectSizeForAll(){
@@ -3262,11 +4401,14 @@ function openSelectSizeForAll(){
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Dimensione per Tutti";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function openSelectPaddingForAll(){
@@ -3324,11 +4466,14 @@ function openSelectPaddingForAll(){
   actionsDiv.innerHTML = "";
   const backBtn = document.createElement('button');
   backBtn.textContent = "Indietro";
-  backBtn.onclick = openCustomizeFontSettings;
+  backBtn.onclick = ()=> {
+    vibrate(VIBRATION_PATTERNS.tap);
+    openCustomizeFontSettings();
+  };
   actionsDiv.appendChild(backBtn);
 
   popupTitle.textContent = "Padding per Tutti";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 /* Category Settings */
@@ -3429,7 +4574,7 @@ function openCategorySettings(){
   actionsDiv.appendChild(closeBtn2);
 
   popupTitle.textContent = "Categorie";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function addProductToCategory(catKey){
@@ -3592,7 +4737,7 @@ function openSubcategorySettings(){
   actionsDiv.appendChild(closeBtn);
 
   popupTitle.textContent = "Sottocategorie";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function addNewSubcategory(){
@@ -3738,7 +4883,7 @@ function openModifierSettings(){
   actionsDiv.appendChild(closeBtn3);
 
   popupTitle.textContent = "Modificatori";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function addModifier(){
@@ -3847,7 +4992,7 @@ function openStorico(){
   actionsDiv.appendChild(closeBtn);
 
   popupTitle.textContent = "Storico";
-  popup.style.display = 'flex';
+  showPopup();
 }
 
 function exportSingleHistoric(entry){
@@ -3882,6 +5027,7 @@ categoriesDiv.addEventListener('click', e=>{
   if(!btn) return;
   const key = btn.dataset.cat;
   if(!key) return;
+  vibrate(VIBRATION_PATTERNS.tap);
   showSubcatsByKey(key);
 });
 
@@ -3993,8 +5139,73 @@ window.addEventListener('load', () => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => console.log('Service Worker registrato'))
-      .catch(err => console.log('Service Worker errore:', err));
+      .then(reg => {
+        console.log('✅ Service Worker registrato');
+        
+        // Controlla aggiornamenti ogni 60 secondi
+        setInterval(() => {
+          reg.update();
+        }, 60000);
+        
+        // Notifica quando c'è un nuovo service worker in attesa
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('🔄 Nuovo aggiornamento disponibile!');
+              // Opzionale: mostra notifica all'utente
+              if(confirm('Nuova versione disponibile! Ricaricare?')) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }
+            }
+          });
+        });
+      })
+      .catch(err => console.log('❌ Service Worker errore:', err));
+  });
+}
+
+/* Gestione stato Online/Offline */
+const offlineIndicator = document.getElementById('offline-indicator');
+
+function updateOnlineStatus() {
+  if (navigator.onLine) {
+    offlineIndicator.style.display = 'none';
+    console.log('🌐 Online');
+    vibrate([20, 50, 20]); // Doppio tap per conferma online
+  } else {
+    offlineIndicator.style.display = 'block';
+    console.log('📡 Offline - Modalità cache attiva');
+    vibrate([100, 100, 100]); // Tripla vibrazione per avviso offline
+  }
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Controlla stato iniziale
+updateOnlineStatus();
+
+/* Previeni perdita dati non salvati */
+window.addEventListener('beforeunload', (e) => {
+  // Salva sempre prima di chiudere
+  saveData();
+});
+
+/* Performance monitoring */
+if ('performance' in window) {
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const perfData = performance.getEntriesByType('navigation')[0];
+      if (perfData) {
+        console.log('📊 Performance:', {
+          'Caricamento DOM': Math.round(perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart) + 'ms',
+          'Caricamento completo': Math.round(perfData.loadEventEnd - perfData.loadEventStart) + 'ms',
+          'Tempo totale': Math.round(perfData.loadEventEnd - perfData.fetchStart) + 'ms'
+        });
+      }
+    }, 0);
   });
 }
 </script>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover" />
+    <title>Mobile Test - Settings</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #000; 
+            color: #fff; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .test-info {
+            background: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .big-button { 
+            padding: 20px; 
+            margin: 10px 0; 
+            font-size: 18px; 
+            background: #0099ff; 
+            color: #fff; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer;
+            width: 100%;
+            touch-action: manipulation;
+        }
+        .settings-btn {
+            background: #666;
+            padding: 15px;
+            margin: 5px;
+            font-size: 16px;
+            min-height: 50px;
+        }
+        .debug-info {
+            background: #222;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h1>📱 Mobile Settings Test</h1>
+    
+    <div class="test-info">
+        <strong>Viewport:</strong> <span id="viewport"></span><br>
+        <strong>User Agent:</strong> <span id="userAgent"></span><br>
+        <strong>Touch Support:</strong> <span id="touchSupport"></span>
+    </div>
+    
+    <button class="big-button" onclick="testSettingsMenu()">
+        ⚙️ Test Settings Menu
+    </button>
+    
+    <button class="big-button" onclick="testRefillCustomization()">
+        🔄 Test REFILL Customization
+    </button>
+    
+    <button class="big-button" onclick="showDebugInfo()">
+        🔍 Show Debug Info
+    </button>
+    
+    <div id="output"></div>
+    
+    <div class="debug-info">
+        <h3>Istruzioni:</h3>
+        <p>1. Tappa "Test Settings Menu" per verificare se il menu si apre</p>
+        <p>2. Se il menu si apre, prova "Test REFILL Customization"</p>
+        <p>3. Controlla la console del browser per eventuali errori</p>
+        <p>4. Se nulla funziona, usa "Show Debug Info"</p>
+    </div>
+
+    <script>
+        // Simula le funzioni dell'app principale
+        let fontSettings = {
+            refill: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 30, color: "#ffffff"}
+        };
+
+        function updateInfo() {
+            document.getElementById('viewport').textContent = window.innerWidth + 'x' + window.innerHeight;
+            document.getElementById('userAgent').textContent = navigator.userAgent.substring(0, 50) + '...';
+            document.getElementById('touchSupport').textContent = 'ontouchstart' in window ? 'Sì' : 'No';
+        }
+
+        function testSettingsMenu() {
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="test-info">
+                    <h3>🔧 Simulazione Menu Settings</h3>
+                    <button class="settings-btn" onclick="testPersonalizzaTasti()">⚙️ Personalizza Tasti</button>
+                    <button class="settings-btn" onclick="testCambiaFont()">🎨 Cambia Font</button>
+                    <button class="settings-btn" onclick="testCambiaSfondo()">🖼️ Cambia Sfondo</button>
+                    <p style="color: green;">✅ Menu Settings simulato creato!</p>
+                </div>
+            `;
+            console.log('🔧 Settings menu simulato aperto');
+        }
+
+        function testPersonalizzaTasti() {
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="test-info">
+                    <h3>🎨 Personalizza Tasti</h3>
+                    <button class="settings-btn" onclick="testRefillCategory()">🔄 REFILL</button>
+                    <button class="settings-btn" onclick="alert('Utility OK')">🔧 Utility</button>
+                    <button class="settings-btn" onclick="alert('Tavoli OK')">🎯 Tavoli</button>
+                    <p style="color: green;">✅ Menu Personalizza Tasti simulato!</p>
+                </div>
+            `;
+            console.log('🎨 Personalizza Tasti simulato aperto');
+        }
+
+        function testRefillCategory() {
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="test-info">
+                    <h3>🔄 REFILL Settings</h3>
+                    <button class="settings-btn" onclick="changeRefillFont()">Font</button>
+                    <button class="settings-btn" onclick="changeRefillSize()">Size</button>
+                    <button class="settings-btn" onclick="changeRefillColor()">Color</button>
+                    <p style="color: green;">✅ REFILL category aperta!</p>
+                    <p>Current: ${fontSettings.refill.font}, ${fontSettings.refill.size}px, ${fontSettings.refill.color}</p>
+                </div>
+            `;
+            console.log('🔄 REFILL category simulata aperta');
+        }
+
+        function changeRefillFont() {
+            fontSettings.refill.font = "'Comic Sans MS', cursive";
+            alert('Font cambiato a Comic Sans MS');
+            testRefillCategory();
+        }
+
+        function changeRefillSize() {
+            fontSettings.refill.size = 24;
+            alert('Size cambiato a 24px');
+            testRefillCategory();
+        }
+
+        function changeRefillColor() {
+            fontSettings.refill.color = '#00ff00';
+            alert('Colore cambiato a verde');
+            testRefillCategory();
+        }
+
+        function testRefillCustomization() {
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="test-info">
+                    <h3>🔄 Test REFILL Buttons</h3>
+                    <div id="refillButtons"></div>
+                    <button class="big-button" onclick="createRefillButtons()">Crea Bottoni REFILL</button>
+                </div>
+            `;
+            createRefillButtons();
+        }
+
+        function createRefillButtons() {
+            const container = document.getElementById('refillButtons');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const categories = [
+                { name: 'CAFFÈ', color: '#888' },
+                { name: 'SPINA', color: '#ff8800' },
+                { name: 'FRIGO', color: '#0099ff' }
+            ];
+
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.name;
+                btn.style.padding = fontSettings.refill.padding + 'px';
+                btn.style.fontSize = fontSettings.refill.size + 'px';
+                btn.style.fontFamily = fontSettings.refill.font;
+                btn.style.background = cat.color;
+                btn.style.color = fontSettings.refill.color;
+                btn.style.margin = '5px';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '8px';
+                btn.style.minHeight = '50px';
+                btn.style.width = '100%';
+                container.appendChild(btn);
+            });
+        }
+
+        function showDebugInfo() {
+            const output = document.getElementById('output');
+            const debugInfo = {
+                viewport: window.innerWidth + 'x' + window.innerHeight,
+                userAgent: navigator.userAgent,
+                touchSupport: 'ontouchstart' in window,
+                devicePixelRatio: window.devicePixelRatio,
+                screen: screen.width + 'x' + screen.height,
+                orientation: screen.orientation ? screen.orientation.angle : 'unknown',
+                connection: navigator.connection ? navigator.connection.effectiveType : 'unknown'
+            };
+            
+            output.innerHTML = `
+                <div class="test-info">
+                    <h3>🔍 Debug Info</h3>
+                    <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
+                </div>
+            `;
+            
+            console.log('🔍 Debug Info:', debugInfo);
+        }
+
+        // Auto-update info
+        window.addEventListener('resize', updateInfo);
+        window.addEventListener('orientationchange', updateInfo);
+        window.onload = updateInfo;
+    </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Debug</title>
+</head>
+<body>
+    <button onclick="testFontSettings()">Test Font Settings</button>
+    <div id="output"></div>
+    
+    <script>
+        // Copia la definizione di fontSettings dal file originale
+        let fontSettings = {
+            utility: {font: "Arial, Helvetica, sans-serif", size: 20, padding: 20, color: "#ffffff"},
+            tavoli: {font: "Arial, Helvetica, sans-serif", size: 24, padding: 21, color: "#ffffff"},
+            ordiniSalvati: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
+            categorie: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 20, color: "#ffffff"},
+            sottocategorie: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 20, color: "#ffffff"},
+            modificatori: {font: "Arial, Helvetica, sans-serif", size: 14, padding: 10, color: "#ffffff"},
+            azioni: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 20, color: "#ffffff"},
+            ordini: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 6, color: "#ffffff"},
+            conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
+            refill: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 30, color: "#ffffff"}
+        };
+        
+        function testFontSettings() {
+            const output = document.getElementById('output');
+            try {
+                // Test accesso a fontSettings.refill
+                const refillFont = fontSettings.refill.font;
+                const refillSize = fontSettings.refill.size;
+                const refillPadding = fontSettings.refill.padding;
+                const refillColor = fontSettings.refill.color;
+                
+                output.innerHTML = `
+                    <p>✅ fontSettings.refill.font: ${refillFont}</p>
+                    <p>✅ fontSettings.refill.size: ${refillSize}</p>
+                    <p>✅ fontSettings.refill.padding: ${refillPadding}</p>
+                    <p>✅ fontSettings.refill.color: ${refillColor}</p>
+                    <p style="color: green;">Tutto funziona correttamente!</p>
+                `;
+                
+                // Test creazione elemento con stili
+                const div = document.createElement('div');
+                div.style.fontSize = fontSettings.refill.size + 'px';
+                div.style.fontFamily = fontSettings.refill.font;
+                div.style.color = fontSettings.refill.color;
+                div.style.padding = fontSettings.refill.padding + 'px';
+                div.textContent = 'Test REFILL Element';
+                div.style.background = '#333';
+                div.style.margin = '10px 0';
+                output.appendChild(div);
+                
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">❌ Errore: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
