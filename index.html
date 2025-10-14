@@ -14,10 +14,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Caveat+Brush&family=Cherry+Cream+Soda&family=Dokdo&family=DynaPuff:wght@400..700&family=Indie+Flower&family=Irish+Grover&family=Knewave&family=Mountains+of+Christmas:wght@400;700&family=Permanent+Marker&family=Rampart+One&family=Rubik+Vinyl&family=Swanky+and+Moo+Moo&display=swap" rel="stylesheet">
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<title>Break Orders — Completo v2.1 (14:44)</title>
+<title>Break Orders — Completo</title>
 <style>
   /* v2.1 - Tasti grandi su tablet */
   :root{--tempo-color:#008800}
@@ -152,7 +153,7 @@ background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;marg
     .popup-content.spesa-popup{width:100vw !important;height:100vh !important;padding:10px !important;border-radius:0 !important}
     #saved-orders{left:10px;right:10px;gap:0.5vw;grid-template-columns:repeat(4,1fr)}
     #saved-orders button{padding:1vh 0.5vw !important;font-size:clamp(10px, 2.5vw, 13px) !important}
-    .popup-content{padding:10px; overflow-y: auto; -webkit-overflow-scrolling: touch;}
+    .popup-content{padding:10px}
     .popup-header{flex-direction:column;gap:8px;margin-bottom:10px}
     .popup-header h3{text-align:center;font-size:18px}
     .actions{justify-content:center;margin-bottom:8px}
@@ -172,7 +173,7 @@ background-size:cover;padding:18px;border-radius:8px;width:90vw;height:90vh;marg
     .confirm-box{padding:20px}
     .refill-categories-grid{grid-template-columns:1fr !important;gap:10px !important;padding:10px !important}
     .refill-products-grid{grid-template-columns:1fr !important;gap:8px !important;padding:10px !important}
-      }
+  }
   /* Telefoni piccoli */
   @media(max-width:480px){
     .actions button{font-size:10px;padding:5px 8px}
@@ -551,7 +552,7 @@ document.getElementById('confirm-cancel').addEventListener('click', ()=>{
 });
 
 /* stato */
-const tableNames = ["TAV-1","TAV-2","TAV-3","TAV-4","TAV-5","TAV-6","TAV-7","TAV-8","TAV-9","TAV-10","TAV-11","TAV-12","BANCO","SALA","SALAF"];
+const tableNames = ["TAV-1","TAV-2","TAV-3","TAV-4","TAV-5","TAV-6","TAV-7","TAV-8","TAV-9","TAV-10","TAV-11","TAV-12","STE","SALA","SALAF"];
 let tableOrders = {}; // {index: [{name,qty,price,cat}, ...], ...}
 let savedOrders = []; // {id, tableName, items: [...], consegnato: false, timestampDone: null}
 let totals = {caffe:0,spina:0,frigo:0,super:0,snack:0,tempo:0,quote:0,cassa:0};
@@ -559,7 +560,642 @@ let currentTarget = {type:null, id:null};
 let accontoMode = false;
 let storico = [];
 let evasiOrders = []; // ordini pagati che possono essere ripristinati
-let refillList = {}; // {productName: quantity} - lista prodotti refill
+let refillList = {}; // {productName: {quantity: number, value: number}} - lista prodotti refill con valori
+let refillCounters = {}; // {productName: number} - contatori prodotti aggiunti agli ordini
+let maintenanceCounters = {}; // {productName: number} - contatori manutenzione manuali
+let consumoCounters = {}; // {productName: number} - contatori consumo da reset refill
+let consumoList = {}; // {productName: {quantity: number, value: number}} - lista prodotti consumo (come refill ma persistente)
+let editableValues = {}; // {productName: number} - valori editabili per il calcolo del prodotto
+let storageValues = {}; // {productName: number} - valori per le righe storage
+
+// Funzioni helper per gestire la nuova struttura refillList
+function getRefillQuantity(productName) {
+  return refillList[productName]?.quantity || 0;
+}
+
+function getRefillValue(productName) {
+  return refillList[productName]?.value || 0;
+}
+
+function setRefillQuantity(productName, quantity) {
+  if (!refillList[productName]) refillList[productName] = {quantity: 0, value: 0};
+  refillList[productName].quantity = quantity;
+  if (quantity <= 0) {
+    delete refillList[productName];
+  }
+}
+
+function setRefillValue(productName, value) {
+  if (!refillList[productName]) refillList[productName] = {quantity: 0, value: 0};
+  refillList[productName].value = value;
+}
+
+function addRefillQuantity(productName, amount = 1) {
+  if (!refillList[productName]) refillList[productName] = {quantity: 0, value: 0};
+  refillList[productName].quantity += amount;
+}
+
+// Funzioni helper per gestire i contatori REFILL
+function getRefillCounter(productName) {
+  return refillCounters[productName] || 0;
+}
+
+function incrementRefillCounter(productName) {
+  refillCounters[productName] = (refillCounters[productName] || 0) + 1;
+}
+
+function decrementRefillCounter(productName) {
+  if(refillCounters[productName] && refillCounters[productName] > 0) {
+    refillCounters[productName] -= 1;
+    if(refillCounters[productName] <= 0) {
+      delete refillCounters[productName];
+    }
+  }
+}
+
+// Funzioni helper per gestire i contatori CONSUMO
+function getConsumoCounter(productName) {
+  return consumoCounters[productName] || 0;
+}
+
+function incrementConsumoCounter(productName, amount = 1) {
+  consumoCounters[productName] = (consumoCounters[productName] || 0) + amount;
+}
+
+// Funzioni helper per gestire consumoList (identiche a refillList)
+function getConsumoQuantity(productName) {
+  return consumoList[productName]?.quantity || 0;
+}
+
+function getConsumoValue(productName) {
+  return consumoList[productName]?.value || 0;
+}
+
+function setConsumoQuantity(productName, quantity) {
+  if (!consumoList[productName]) consumoList[productName] = {quantity: 0, value: 0};
+  consumoList[productName].quantity = quantity;
+  if (quantity <= 0) {
+    delete consumoList[productName];
+  }
+}
+
+function setConsumoValue(productName, value) {
+  if (!consumoList[productName]) consumoList[productName] = {quantity: 0, value: 0};
+  consumoList[productName].value = value;
+}
+
+function editConsumoValue(productName, callback) {
+  const currentQuantity = getConsumoQuantity(productName);
+  const currentValue = getConsumoValue(productName);
+  
+  // Crea popup personalizzato per editing
+  const editOverlay = document.createElement('div');
+  editOverlay.style.position = 'fixed';
+  editOverlay.style.top = '0';
+  editOverlay.style.left = '0';
+  editOverlay.style.width = '100%';
+  editOverlay.style.height = '100%';
+  editOverlay.style.background = 'rgba(0,0,0,0.8)';
+  editOverlay.style.display = 'flex';
+  editOverlay.style.alignItems = 'center';
+  editOverlay.style.justifyContent = 'center';
+  editOverlay.style.zIndex = '9999';
+  
+  const editBox = document.createElement('div');
+  editBox.style.background = '#222';
+  editBox.style.padding = '30px';
+  editBox.style.borderRadius = '10px';
+  editBox.style.border = '2px solid #444';
+  editBox.style.minWidth = '300px';
+  editBox.style.textAlign = 'center';
+  
+  const title = document.createElement('div');
+  title.textContent = `Modifica: ${productName}`;
+  title.style.fontSize = '18px';
+  title.style.fontWeight = 'bold';
+  title.style.marginBottom = '20px';
+  title.style.color = '#fff';
+  editBox.appendChild(title);
+  
+  // Campo quantità
+  const qtyLabel = document.createElement('div');
+  qtyLabel.textContent = 'Quantità:';
+  qtyLabel.style.color = '#fff';
+  qtyLabel.style.marginBottom = '5px';
+  qtyLabel.style.textAlign = 'left';
+  editBox.appendChild(qtyLabel);
+  
+  const qtyInput = document.createElement('input');
+  qtyInput.type = 'number';
+  qtyInput.value = currentQuantity;
+  qtyInput.style.width = '100%';
+  qtyInput.style.padding = '10px';
+  qtyInput.style.marginBottom = '15px';
+  qtyInput.style.fontSize = '16px';
+  qtyInput.style.borderRadius = '5px';
+  qtyInput.style.border = '1px solid #666';
+  qtyInput.style.background = '#333';
+  qtyInput.style.color = '#fff';
+  editBox.appendChild(qtyInput);
+  
+  // Campo valore
+  const valueLabel = document.createElement('div');
+  valueLabel.textContent = 'Valore:';
+  valueLabel.style.color = '#fff';
+  valueLabel.style.marginBottom = '5px';
+  valueLabel.style.textAlign = 'left';
+  editBox.appendChild(valueLabel);
+  
+  const valueInput = document.createElement('input');
+  valueInput.type = 'number';
+  valueInput.step = '0.01';
+  valueInput.value = currentValue;
+  valueInput.style.width = '100%';
+  valueInput.style.padding = '10px';
+  valueInput.style.marginBottom = '20px';
+  valueInput.style.fontSize = '16px';
+  valueInput.style.borderRadius = '5px';
+  valueInput.style.border = '1px solid #666';
+  valueInput.style.background = '#333';
+  valueInput.style.color = '#fff';
+  editBox.appendChild(valueInput);
+  
+  // Bottoni
+  const buttonsDiv = document.createElement('div');
+  buttonsDiv.style.display = 'flex';
+  buttonsDiv.style.gap = '10px';
+  buttonsDiv.style.justifyContent = 'center';
+  
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Salva';
+  saveBtn.style.padding = '10px 20px';
+  saveBtn.style.fontSize = '16px';
+  saveBtn.style.background = '#00aa00';
+  saveBtn.style.color = '#fff';
+  saveBtn.style.border = 'none';
+  saveBtn.style.borderRadius = '5px';
+  saveBtn.style.cursor = 'pointer';
+  saveBtn.onclick = () => {
+    const newQuantity = parseFloat(qtyInput.value) || 0;
+    const newValue = parseFloat(valueInput.value) || 0;
+    
+    // Aggiorna i valori
+    setConsumoQuantity(productName, newQuantity);
+    setConsumoValue(productName, newValue);
+    
+    // Aggiorna anche il contatore se necessario
+    if(newQuantity > 0) {
+      consumoCounters[productName] = newQuantity;
+    } else {
+      delete consumoCounters[productName];
+    }
+    
+    // Salva i dati
+    saveData();
+    
+    // Rimuovi overlay
+    document.body.removeChild(editOverlay);
+    
+    // Callback per aggiornare interfaccia
+    if(callback) callback();
+    
+    vibrate(VIBRATION_PATTERNS.success);
+  };
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Annulla';
+  cancelBtn.style.padding = '10px 20px';
+  cancelBtn.style.fontSize = '16px';
+  cancelBtn.style.background = '#666';
+  cancelBtn.style.color = '#fff';
+  cancelBtn.style.border = 'none';
+  cancelBtn.style.borderRadius = '5px';
+  cancelBtn.style.cursor = 'pointer';
+  cancelBtn.onclick = () => {
+    document.body.removeChild(editOverlay);
+  };
+  
+  buttonsDiv.appendChild(saveBtn);
+  buttonsDiv.appendChild(cancelBtn);
+  editBox.appendChild(buttonsDiv);
+  
+  editOverlay.appendChild(editBox);
+  document.body.appendChild(editOverlay);
+  
+  // Focus sul primo input
+  qtyInput.focus();
+  qtyInput.select();
+}
+
+
+// Lista dei 70 prodotti nell'ordine del database Excel
+const DATABASE_PRODUCTS = [
+  "CAFFÈ LISCIO", "CAFFÈ DECA", "CAFFÈ CORRETTO GRAPPA", "CAFFÈ CORRETTO SAMBUCA", "CAFFÈ CORRETTO BAILEYS",
+  "CAFFÈ CORRETTO PRUGNA", "PYRASER 0,3", "PYRASER 0,5", "ARIA 0,3", "ARIA 0,5",
+  "GUINNESS 0,25", "GUINNESS 0,5", "SPRITZ LISCIO", "SPRITZ APEROL", "SPRITZ CAMPARI",
+  "SPRITZ CYNAR", "ACQUA NATURALE", "ACQUA FRIZZANTE", "COCA COLA", "COCA ZERO",
+  "TÈ LIMONE", "TÈ PESCA", "FANTA", "LEMON SODA", "RED BULL",
+  "AMARO MONTENEGRO", "AMARO JAGERMEISTER", "AMARO CAPO", "AMARO BRAULIO", "AMARO BRANCAMENTA",
+  "AMARO PETRUS", "GRAPPA BIANCA", "GRAPPA 24k", "GRAPPA MIELE", "GRAPPA CAMOMILLA",
+  "GRAPPA PRUGNA", "GRAPPA MIRTILLO", "COCKTAILS GIN TONIC", "COCKTAILS GIN TONIC H", "COCKTAILS GIN LEMON",
+  "COCKTAILS GIN LEMON H", "COCKTAILS JACK COLA", "COCKTAILS RUM COLA", "COCKTAILS VODKA TONIC", "COCKTAILS JAGERBOMB",
+  "COCKTAILS VODKA LEMON", "COCKTAILS AMERICANO", "BAILEYS", "JACK DANIELS", "TALISKER",
+  "LIQUIRIZIA", "PRUGNA CM", "SAMBUCA", "TOAST", "PIZZETTA",
+  "HOT DOG", "CARTA MANI", "CARTA IGIENICA", "SAPONE LIQUIDO", "SACCHI GRANDI",
+  "SACCHI PICCOLI", "DET PAVIMENTI", "DET BAGNI", "DET SUPERFICI", "DET ACCIAIO",
+  "SPUGNE GRANDI", "SPUGNE PICCOLE", "SPUGNE PIATTE", "LAVABICCHIERI B", "LAVABICCHIERI D"
+];
+
+// Variabile per memorizzare il file Excel caricato
+let loadedExcelFile = null;
+let pwaBuilderFolderHandle = null; // Handle cartella PWAbuilder per File System Access API
+
+// Funzioni per gestire i file Excel
+async function loadExcelFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        loadedExcelFile = workbook;
+        console.log('📊 File Excel caricato con successo');
+        resolve(workbook);
+      } catch (error) {
+        console.error('❌ Errore caricamento Excel:', error);
+        reject(error);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function updateExcelWithConsumoData(consumoData) {
+  if (!loadedExcelFile) {
+    console.error('❌ Nessun file Excel caricato');
+    return null;
+  }
+  
+  try {
+    // Clona il workbook per non modificare l'originale
+    const workbook = XLSX.utils.book_new();
+    
+    // Copia tutti i fogli dall'originale
+    loadedExcelFile.SheetNames.forEach(sheetName => {
+      const originalSheet = loadedExcelFile.Sheets[sheetName];
+      
+      // Clona il foglio mantenendo tutte le proprietà originali
+      const newSheet = {};
+      Object.keys(originalSheet).forEach(key => {
+        newSheet[key] = originalSheet[key];
+      });
+      
+      // Se è il primo foglio (Sheet1), aggiorna SOLO le celle B2:B71
+      if (sheetName === loadedExcelFile.SheetNames[0]) {
+        console.log('📝 Aggiornamento celle B2:B71 (preservando formule)...');
+        
+        // Debug: mostra tutte le celle B2:B71 del file originale
+        console.log('🔍 DEBUG: Contenuto celle B2:B71 nel file originale:');
+        for (let i = 2; i <= 71; i++) {
+          const cellAddr = `B${i}`;
+          if (originalSheet[cellAddr]) {
+            console.log(`${cellAddr}:`, originalSheet[cellAddr]);
+          }
+        }
+        
+        // Aggiorna solo le celle specifiche B2:B71
+        DATABASE_PRODUCTS.forEach((productName, index) => {
+          const rowNumber = index + 2; // B2, B3, B4, etc.
+          const cellAddress = `B${rowNumber}`;
+          const refillQuantity = consumoData[productName] || 0;
+          
+          // Leggi il valore esistente nella cella B
+          let currentValue = 0;
+          if (originalSheet[cellAddress]) {
+            // Prova prima il valore calcolato (w), poi il valore grezzo (v)
+            if (originalSheet[cellAddress].w !== undefined) {
+              currentValue = parseFloat(originalSheet[cellAddress].w) || 0;
+            } else if (originalSheet[cellAddress].v !== undefined) {
+              currentValue = parseFloat(originalSheet[cellAddress].v) || 0;
+            }
+          }
+          
+          console.log(`🔍 ${productName} (${cellAddress}): cella =`, originalSheet[cellAddress], `→ valore = ${currentValue}, refill = ${refillQuantity}`);
+          
+          // Calcola il nuovo valore: esistente + quantità refill
+          const newValue = currentValue + refillQuantity;
+          
+          // Aggiorna SEMPRE la cella (anche se refill = 0, per debug)
+          newSheet[cellAddress] = {
+            t: 'n', // tipo numero
+            v: newValue, // valore aggiornato
+            w: newValue.toString() // valore formattato
+          };
+          
+          if (refillQuantity > 0) {
+            console.log(`📊 ${productName} (${cellAddress}): ${currentValue} + ${refillQuantity} = ${newValue} ✅`);
+          } else {
+            console.log(`📊 ${productName} (${cellAddress}): ${currentValue} + 0 = ${newValue} ⚪`);
+          }
+        });
+      }
+      
+      // Aggiungi il foglio al nuovo workbook
+      XLSX.utils.book_append_sheet(workbook, newSheet, sheetName);
+    });
+    
+    console.log('✅ File Excel aggiornato in memoria (formule preservate)');
+    return workbook;
+    
+  } catch (error) {
+    console.error('❌ Errore aggiornamento Excel:', error);
+    return null;
+  }
+}
+
+// File System Access API - Selezione cartella PWAbuilder
+async function selectPWABuilderFolder() {
+  if (!('showDirectoryPicker' in window)) {
+    console.warn('⚠️ File System Access API non supportata. Fallback a download.');
+    return null;
+  }
+  
+  try {
+    const directoryHandle = await window.showDirectoryPicker({
+      id: 'pwabuilder-folder',
+      mode: 'readwrite'
+    });
+    
+    pwaBuilderFolderHandle = directoryHandle;
+    console.log('✅ Cartella PWAbuilder selezionata:', directoryHandle.name);
+    return directoryHandle;
+    
+  } catch (err) {
+    console.warn('❌ Selezione cartella annullata:', err);
+    return null;
+  }
+}
+
+// File System Access API - Salvataggio diretto
+async function saveDatabaseDirectly(workbook) {
+  if (!pwaBuilderFolderHandle) {
+    console.log('📁 Seleziona prima la cartella PWAbuilder...');
+    pwaBuilderFolderHandle = await selectPWABuilderFolder();
+  }
+  
+  if (!pwaBuilderFolderHandle) {
+    console.log('📥 Fallback a download tradizionale...');
+    return downloadUpdatedExcel(workbook);
+  }
+  
+  try {
+    // Ottiene/crea database.xlsx nella cartella
+    const fileHandle = await pwaBuilderFolderHandle.getFileHandle('database.xlsx', {
+      create: true
+    });
+    
+    // Crea stream di scrittura
+    const writable = await fileHandle.createWritable();
+    
+    // Converte workbook in blob
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    // Scrive e sovrascrive
+    await writable.write(blob);
+    await writable.close();
+    
+    console.log('✅ database.xlsx sovrascritto direttamente nella cartella PWAbuilder!');
+    alert('✅ Database Excel aggiornato con successo!\n\n📁 Salvato direttamente in PWAbuilder/database.xlsx');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Errore salvataggio diretto:', error);
+    console.log('📥 Fallback a download tradizionale...');
+    return downloadUpdatedExcel(workbook);
+  }
+}
+
+// Fallback download tradizionale
+function downloadUpdatedExcel(workbook, filename = 'database.xlsx') {
+  try {
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    
+    // Genera timestamp per nome univoco che evita duplicati
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const uniqueFilename = `database_${timestamp}.xlsx`;
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = uniqueFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log(`📥 File ${uniqueFilename} scaricato con successo`);
+    console.log(`⚠️  IMPORTANTE: Sposta manualmente il file da Download a PWAbuilder e rinominalo in 'database.xlsx'`);
+    
+    // Mostra istruzioni all'utente
+    setTimeout(() => {
+      alert(`✅ File Excel aggiornato!\n\n📁 Salvato come: ${uniqueFilename}\n\n⚠️ Per completare:\n1. Vai in Download\n2. Sposta il file in PWAbuilder\n3. Rinominalo in 'database.xlsx'`);
+    }, 500);
+    
+  } catch (error) {
+    console.error('❌ Errore download Excel:', error);
+  }
+}
+
+// Funzioni helper per gestire i valori editabili
+function getEditableValue(productName) {
+  const value = editableValues[productName] || 0;
+  console.log(`GET editableValue per ${productName}: ${value}`); // Debug
+  return value;
+}
+
+function setEditableValue(productName, value) {
+  const numValue = parseFloat(value) || 0;
+  editableValues[productName] = numValue;
+  console.log(`SET editableValue per ${productName}: ${numValue}`, editableValues); // Debug
+  // NON cancellare i valori 0 - sono validi!
+  // Cancella solo se il valore è effettivamente vuoto/undefined
+  if (value === '' || value === null || value === undefined) {
+    delete editableValues[productName];
+  }
+}
+
+// Funzioni helper per gestire i valori storage
+function getStorageValue(productName) {
+  return storageValues[productName] || 0;
+}
+
+function setStorageValue(productName, value) {
+  const numValue = parseFloat(value) || 0;
+  storageValues[productName] = numValue;
+  console.log(`SET storageValue per ${productName}: ${numValue}`, storageValues); // Debug
+  if (value === '' || value === null || value === undefined) {
+    delete storageValues[productName];
+  }
+}
+
+
+function getProductResult(productName) {
+  const consumo = getConsumoCounter(productName);
+  const editable = getEditableValue(productName);
+  return consumo * editable;
+}
+
+// Funzioni helper per gestire i contatori manutenzione
+function getMaintenanceCounter(productName) {
+  return maintenanceCounters[productName] || 0;
+}
+
+function incrementMaintenanceCounter(productName) {
+  maintenanceCounters[productName] = (maintenanceCounters[productName] || 0) + 1;
+}
+
+function decrementMaintenanceCounter(productName) {
+  const currentValue = maintenanceCounters[productName] || 0;
+  console.log(`MANUTENZIONE: Decrementing ${productName} from ${currentValue}`);
+  
+  if(currentValue > 0) {
+    maintenanceCounters[productName] = currentValue - 1;
+    console.log(`MANUTENZIONE: ${productName} decremented to ${maintenanceCounters[productName]}`);
+    
+    if(maintenanceCounters[productName] <= 0) {
+      delete maintenanceCounters[productName];
+      console.log(`MANUTENZIONE: ${productName} deleted from counters`);
+    }
+  } else {
+    console.log(`MANUTENZIONE: ${productName} already at 0, cannot decrement further`);
+  }
+}
+
+function executeRefillReset() {
+  console.log('RESET REFILL: Inizio esecuzione reset...');
+  
+  // Disabilita Firebase completamente
+  const wasFirebaseEnabled = firebaseEnabled;
+  firebaseEnabled = false;
+  console.log('RESET REFILL: Firebase disabilitato');
+  
+  // Debug: mostra cosa c'è in refillList prima del reset
+  console.log('RESET REFILL: refillList prima del reset:', refillList);
+  console.log('RESET REFILL: refillCounters prima del reset:', refillCounters);
+  
+  // Prima di azzerare, trasferisci i dati refill alle liste spesa/magazzino/consumo
+  console.log('RESET REFILL: Inizio trasferimento dati...');
+  const refillKeys = Object.keys(refillList);
+  console.log('RESET REFILL: Prodotti da trasferire:', refillKeys);
+  
+  try {
+    refillKeys.forEach(productName => {
+      try {
+        console.log(`RESET REFILL: Processando ${productName}...`);
+        
+        // Fix per dati corrotti: se refillList[productName] è una stringa, usa refillCounters
+        let quantity, value;
+        if(typeof refillList[productName] === 'object' && refillList[productName] !== null) {
+          quantity = getRefillQuantity(productName);
+          value = getRefillValue(productName);
+        } else {
+          // Fallback: usa refillCounters per quantità e valore di default da editableValues
+          quantity = refillCounters[productName] || 0;
+          value = getEditableValue(productName) || 0;
+          console.log(`RESET REFILL: Dati corrotti per ${productName}, usando fallback qty=${quantity}, val=${value}`);
+        }
+        
+        if(quantity > 0) {
+          // 1. CONSUMO: Aggiungi alla lista consumo (somma se già esiste)
+          if(!consumoList[productName]) consumoList[productName] = {quantity: 0, value: 0};
+          consumoList[productName].quantity += quantity;
+          consumoList[productName].value = value;
+          incrementConsumoCounter(productName, quantity);
+
+          // 2. Trasferisci il valore ai valori editabili
+          const currentEditable = getEditableValue(productName) || 0;
+          const newEditableValue = currentEditable + (parseFloat(value) || 0);
+          setEditableValue(productName, newEditableValue);
+          console.log(`RESET REFILL: ${productName} editable ${currentEditable} + ${value} = ${newEditableValue}`);
+          
+          // 3. Aggiorna anche direttamente storageValues
+          const currentStorage = getStorageValue(productName) || 0;
+          const storageIncrement = (parseFloat(quantity) || 0) * (parseFloat(value) || 0);
+          const newStorageValue = currentStorage + storageIncrement;
+          setStorageValue(productName, newStorageValue);
+          console.log(`RESET REFILL: ${productName} storage ${currentStorage} + (${quantity}*${value}) = ${newStorageValue}`);
+        }
+      } catch(err) {
+        console.error(`RESET REFILL: Errore processando ${productName}:`, err);
+      }
+    });
+  } catch(err) {
+    console.error('RESET REFILL: Errore generale nel trasferimento:', err);
+  }
+  
+  // Azzera tutto completamente
+  console.log('RESET REFILL: Azzerando refillList e refillCounters...');
+  refillList = {};
+  refillCounters = {};
+  maintenanceCounters = {};
+  
+  console.log('RESET REFILL: Dopo azzeramento - refillList:', refillList);
+  console.log('RESET REFILL: Dopo azzeramento - refillCounters:', refillCounters);
+  
+  // Salva in localStorage
+  localStorage.setItem('breakOrdersState', JSON.stringify({
+    tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, 
+    refillList: {}, refillCounters: {}, maintenanceCounters: {}, 
+    consumoCounters, consumoList, editableValues, storageValues,
+    currentBackground, currentFont, currentFontSize, fontSettings, 
+    modifiersList, subcategories
+  }));
+  
+  // Riabilita Firebase e forza il salvataggio
+  firebaseEnabled = wasFirebaseEnabled;
+  if (firebaseEnabled && database) {
+    console.log('RESET REFILL: Salvando dati azzerati su Firebase...');
+    database.ref('breakOrders').update({
+      refillList: {},
+      refillCounters: {},
+      maintenanceCounters: {},
+      _meta: { lastUpdated: firebase.database.ServerValue.TIMESTAMP }
+    }).then(() => {
+      console.log('RESET REFILL: Dati azzerati salvati su Firebase con successo');
+    }).catch(err => {
+      console.error('RESET REFILL: Errore salvataggio Firebase:', err);
+    });
+  }
+  
+  console.log('RESET REFILL: Reset completato');
+  
+  // Riapri il popup per aggiornare i contatori visualizzati
+  openRefillSimple();
+}
+
+function resetRefillQuantitiesOnly(productNames) {
+  // Prima di azzerare, aggiungi le quantità a consumoList
+  productNames.forEach(productName => {
+    if (refillList[productName]) {
+      const quantity = getRefillQuantity(productName);
+      const value = getRefillValue(productName);
+      if(quantity > 0) {
+        // Aggiungi alla lista consumo (somma se già esiste)
+        if(!consumoList[productName]) consumoList[productName] = {quantity: 0, value: 0};
+        consumoList[productName].quantity += quantity;
+        consumoList[productName].value = value; // Mantieni l'ultimo valore
+      }
+      refillList[productName].quantity = 0;
+      // Se la quantità diventa 0, rimuovi completamente il prodotto
+      if (refillList[productName].quantity <= 0) {
+        delete refillList[productName];
+      }
+    }
+  });
+}
 let currentBackground = "https://03d98711d4.clvaw-cdnwnd.com/778f66d17c7b835c7de2aa9e94f2492e/200000148-9eb959eb97/HD-wallpaper-black-abstract-android-background-geometric.webp?ph=03d98711d4";
 let currentFont = "Arial, Helvetica, sans-serif";
 let currentFontSize = 16; // dimensione base in px
@@ -572,8 +1208,7 @@ let fontSettings = {
   modificatori: {font: "Arial, Helvetica, sans-serif", size: 14, padding: 10, color: "#ffffff"},
   azioni: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 20, color: "#ffffff"},
   ordini: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 6, color: "#ffffff"},
-  conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"},
-  refill: {font: "Arial, Helvetica, sans-serif", size: 18, padding: 30, color: "#ffffff"}
+  conferma: {font: "Arial, Helvetica, sans-serif", size: 16, padding: 12, color: "#ffffff"}
 };
 let modifiersList = ["SR", "M", "K", "S", "GH"];
 let subcategories = {
@@ -671,19 +1306,38 @@ const VIBRATION_PATTERNS = {
 function saveData(){
   try{
     // Dati da sincronizzare su Firebase (ordini + nomi tavoli)
-    const firebaseData = {
-      tableOrders, 
-      savedOrders, 
-      totals, 
-      storico, 
-      evasiOrders,
-      refillList,
-      tableNames
+    // Evita di inviare oggetti/array vuoti per non sovrascrivere dati esistenti sul server
+    const firebaseData = {};
+    const addIfHasData = (key, value) => {
+      if (value == null) return;
+      if (Array.isArray(value)) { if (value.length > 0) firebaseData[key] = value; return; }
+      if (typeof value === 'object') { if (Object.keys(value).length > 0) firebaseData[key] = value; return; }
+      firebaseData[key] = value;
     };
+    addIfHasData('tableOrders', tableOrders);
+    addIfHasData('savedOrders', savedOrders);
+    addIfHasData('totals', totals);
+    // Forza sempre il salvataggio dello storico, anche se vuoto
+    firebaseData['storico'] = storico || [];
+    console.log('SaveData - Salvando storico con', (storico || []).length, 'elementi');
+    // Forza sempre il salvataggio degli evasi, anche se vuoto
+    firebaseData['evasiOrders'] = evasiOrders || [];
+    console.log('SaveData - Salvando evasi con', (evasiOrders || []).length, 'elementi');
+    addIfHasData('refillList', refillList);
+    addIfHasData('refillCounters', refillCounters);
+    // Forza sempre il salvataggio di maintenanceCounters, anche se vuoto
+    firebaseData['maintenanceCounters'] = maintenanceCounters;
+    addIfHasData('consumoCounters', consumoCounters);
+    addIfHasData('consumoList', consumoList);
+    addIfHasData('editableValues', editableValues);
+    addIfHasData('storageValues', storageValues);
+    addIfHasData('tableNames', tableNames);
+    // Metadati server per ordinamento/risoluzione conflitti lato client
+    firebaseData._meta = { lastUpdated: firebase.database.ServerValue.TIMESTAMP };
     
     // Dati completi da salvare in localStorage (ordini + impostazioni)
     const localData = {
-      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList,
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
       currentBackground, currentFont, currentFontSize, fontSettings, 
       modifiersList, subcategories
     };
@@ -693,7 +1347,8 @@ function saveData(){
     
     // Se Firebase è abilitato, sincronizza SOLO gli ordini
     if (firebaseEnabled && database && !isUpdatingFromFirebase) {
-      database.ref('breakOrders').set(firebaseData).catch(err => {
+      // update() evita di sovrascrivere le chiavi non incluse nel payload
+      database.ref('breakOrders').update(firebaseData).catch(err => {
         console.error("Errore salvataggio Firebase:", err);
       });
     }
@@ -733,15 +1388,66 @@ function applyParsedData(parsed, fromFirebase = false){
   // Assicura che tutte le categorie esistano
   if(!totals.cassa) totals.cassa = 0;
   storico = parsed.storico || parsed.storicoList || [];
+  console.log('LoadData - Caricato storico con', storico.length, 'elementi');
   evasiOrders = parsed.evasiOrders || [];
+  console.log('LoadData - Caricato evasi con', evasiOrders.length, 'elementi');
   
-  // RefillList: se arriva da Firebase e ha dati, usalo; altrimenti mantieni quello locale
-  if(parsed.refillList && Object.keys(parsed.refillList).length > 0){
-    refillList = parsed.refillList;
-  } else if(!fromFirebase){
-    refillList = parsed.refillList || {};
+  // RefillList e RefillCounters: SOLO localStorage, MAI da Firebase
+  if(!fromFirebase && parsed.refillList){
+    refillList = { ...(refillList || {}), ...parsed.refillList };
   }
-  // Se fromFirebase è true e refillList è vuoto, non fare nulla (mantieni quello locale)
+  if(!fromFirebase && parsed.refillCounters){
+    refillCounters = { ...(refillCounters || {}), ...parsed.refillCounters };
+  }
+  // Ignora completamente refillList e refillCounters da Firebase
+  console.log('REFILL: Ignorati dati Firebase, mantenuti locali:', {refillList, refillCounters});
+  
+  // MaintenanceCounters: merge se presente
+  if(parsed.maintenanceCounters){
+    maintenanceCounters = { ...(maintenanceCounters || {}), ...parsed.maintenanceCounters };
+  } else if(!fromFirebase && parsed.maintenanceCounters){
+    maintenanceCounters = { ...(maintenanceCounters || {}), ...parsed.maintenanceCounters };
+  }
+  
+  // ConsumoCounters: merge se presente
+  if(parsed.consumoCounters){
+    consumoCounters = { ...(consumoCounters || {}), ...parsed.consumoCounters };
+  } else if(!fromFirebase && parsed.consumoCounters){
+    consumoCounters = { ...(consumoCounters || {}), ...parsed.consumoCounters };
+  }
+  
+  // ConsumoList: merge se presente
+  if(parsed.consumoList){
+    consumoList = { ...(consumoList || {}), ...parsed.consumoList };
+  } else if(!fromFirebase && parsed.consumoList){
+    consumoList = { ...(consumoList || {}), ...parsed.consumoList };
+  }
+  
+  // EditableValues: priorità a localStorage, effettua merge per non perdere chiavi
+  if(!fromFirebase){
+    const incoming = parsed.editableValues || {};
+    editableValues = { ...(editableValues || {}), ...incoming };
+    console.log('editableValues da localStorage (merge):', editableValues); // Debug
+  } else if(parsed.editableValues && Object.keys(editableValues).length === 0){
+    // Caricamento da Firebase solo se localStorage era vuoto
+    editableValues = parsed.editableValues;
+    console.log('CARICATI editableValues da Firebase (localStorage vuoto):', editableValues); // Debug
+  } else {
+    console.log('editableValues mantenuti (Firebase ignorato):', editableValues); // Debug
+  }
+  
+  // StorageValues: merge
+  if(!fromFirebase){
+    const incoming = parsed.storageValues || {};
+    storageValues = { ...(storageValues || {}), ...incoming };
+    console.log('storageValues da localStorage (merge):', storageValues); // Debug
+  } else if(parsed.storageValues && Object.keys(storageValues).length === 0){
+    storageValues = parsed.storageValues;
+    console.log('CARICATI storageValues da Firebase (localStorage vuoto):', storageValues); // Debug
+  } else {
+    console.log('storageValues mantenuti (Firebase ignorato):', storageValues); // Debug
+  }
+  
   
   // Sincronizza tableNames da Firebase
   if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
@@ -881,9 +1587,6 @@ function renderTables(){
   settingsBtn.className = "utility-btn";
   settingsBtn.innerHTML = "&#9881;";
   settingsBtn.onclick = ()=> {
-    console.log('⚙️ Settings button clicked');
-    console.log('📱 Viewport:', window.innerWidth + 'x' + window.innerHeight);
-    console.log('📱 User Agent:', navigator.userAgent);
     vibrate(VIBRATION_PATTERNS.tap);
     openSettings();
   };
@@ -952,19 +1655,19 @@ function renderTables(){
   }
   container.appendChild(row3);
   
-  // Riga 5: BANCO, SALA, SALAF, +, REFILL, SPESA
+  // Riga 5: STE, SALA, SALAF, +, REFILL, SPESA
   const row4 = document.createElement('div');
   row4.className = "tables-grid";
   
-  const bancoIdx = tableNames.indexOf("BANCO");
-  if(bancoIdx !== -1){
+  const steIdx = tableNames.indexOf("STE");
+  if(steIdx !== -1){
     const b = document.createElement('button');
     b.className = "table-btn";
     // Rimuovo il comportamento rosso dai tavoli
-    b.textContent = "BANCO";
+    b.textContent = "STE";
     b.onclick = ()=> {
       vibrate(VIBRATION_PATTERNS.tap);
-      openForTable(bancoIdx);
+      openForTable(steIdx);
     };
     row4.appendChild(b);
   }
@@ -1091,71 +1794,84 @@ function renderSavedButtons(){
     savedOrdersDiv.appendChild(b);
   });
 }
-
-/* Popup Refill - Versione Semplice */
+/* Popup Standard per REFILL */
 function openRefillSimple(){
   currentTarget = {type:null, id:null};
   
-  // Setup popup come SPESA
+  // Setup popup standard come SPESA
   const popupContent = document.querySelector('.popup-content');
   popupContent.classList.add('spesa-popup');
+  
+  // Nascondi solo la scritta "ORDINE" mantenendo i tasti azione
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   cassaPad.classList.add('hidden');
   modifiersDiv.style.display = 'none';
   
-  popupTitle.textContent = "REFILL - Seleziona Categoria";
+  popupTitle.textContent = "REFILL";
   orderList.innerHTML = "";
   
-  // Crea lista semplice delle categorie
-  const categories = [
-    { key: 'c1', name: 'CAFFÈ', color: '#888' },
-    { key: 'c2', name: 'SPINA', color: '#ff8800' },
-    { key: 'c3', name: 'FRIGO', color: '#0099ff' },
-    { key: 'c4', name: 'SUPER', color: '#aaaa00' },
-    { key: 'c5', name: 'SNACK', color: '#ff0000' },
-    { key: 'manutenzione', name: 'MANUTENZIONE', color: '#8800aa' }
-  ];
-  
-  // Container per centrare i bottoni
+  // Container per centrare i tasti
   const container = document.createElement('div');
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.alignItems = 'center';
-  container.style.padding = '10px';
+  container.style.justifyContent = 'center';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
   
-  categories.forEach(cat => {
-    const div = document.createElement('div');
-    console.log(`🔄 Creando bottone REFILL ${cat.name} con:`, {
-      font: fontSettings.refill.font,
-      size: fontSettings.refill.size,
-      color: fontSettings.refill.color,
-      padding: fontSettings.refill.padding
-    });
-    div.style.width = '50%';
-    div.style.padding = fontSettings.refill.padding + 'px';
-    div.style.margin = '5px 0';
-    div.style.background = cat.color;
-    div.style.borderRadius = '8px';
-    div.style.cursor = 'pointer';
-    div.style.textAlign = 'center';
-    div.style.fontWeight = '700';
-    div.style.fontSize = fontSettings.refill.size + 'px';
-    div.style.setProperty('font-family', fontSettings.refill.font, 'important');
-    div.style.color = fontSettings.refill.color;
-    div.textContent = cat.name;
+  // Definizione tasti REFILL con colori delle categorie
+  const refillButtons = [
+    { name: 'REFILL CAFFÈ', color: '#888' },
+    { name: 'REFILL SPINA', color: '#ff8800' },
+    { name: 'REFILL FRIGO', color: '#0099ff' },
+    { name: 'REFILL SUPER', color: '#aaaa00' },
+    { name: 'REFILL SNACK', color: '#ff0000' },
+    { name: 'MANUTENZIONE', color: '#8800aa' }
+  ];
+  
+  refillButtons.forEach(btn => {
+    const button = document.createElement('button');
+    button.textContent = btn.name;
+    button.style.width = '75%';
+    button.style.padding = '20px';
+    button.style.fontSize = '18px';
+    button.style.fontWeight = '700';
+    button.style.background = btn.color;
+    button.style.color = '#fff';
+    button.style.border = 'none';
+    button.style.borderRadius = '8px';
+    button.style.cursor = 'pointer';
+    button.style.transition = 'all 0.2s ease';
+    button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
     
-    div.onclick = () => {
+    // Effetti hover
+    button.onmouseenter = () => {
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';
+    };
+    button.onmouseleave = () => {
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    };
+    
+    // Click per aprire sottocategorie
+    button.onclick = () => {
       vibrate(VIBRATION_PATTERNS.tap);
-      if(cat.key === 'manutenzione'){
-        openManutenzioneRefill();
+      if(btn.name === 'MANUTENZIONE') {
+        openRefillManutenzione();
       } else {
-        openRefillCategory(cat.key, cat.name, cat.color);
+        const categoryKey = btn.name.replace('REFILL ', '').toLowerCase();
+        openRefillCategory(categoryKey, btn.name, btn.color);
       }
     };
     
-    container.appendChild(div);
+    container.appendChild(button);
   });
   
   orderList.appendChild(container);
@@ -1163,157 +1879,470 @@ function openRefillSimple(){
   // Bottoni azioni
   actionsDiv.innerHTML = "";
   
-  const resetAllBtn = document.createElement('button');
-  resetAllBtn.textContent = 'Reset Tutto';
-  resetAllBtn.style.background = '#aa0000';
-  resetAllBtn.style.color = '#fff';
-  resetAllBtn.onclick = ()=> {
-    vibrate(VIBRATION_PATTERNS.warning);
-    showConfirm('Confermi il reset di TUTTE le categorie REFILL?', ()=>{
+
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = "Reset Refill";
+  resetBtn.style.background = '#ff4444';
+  resetBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    showConfirm('Vuoi azzerare tutti i contatori REFILL e aggiornare il database Excel?', async ()=> {
       vibrate(VIBRATION_PATTERNS.success);
-      // Reset completo di refillList
-      Object.keys(refillList).forEach(key => {
-        delete refillList[key];
+      
+      console.log('RESET REFILL: INIZIO RESET CON EXCEL');
+      
+      // BLOCCA Firebase completamente
+      const originalFirebaseEnabled = firebaseEnabled;
+      firebaseEnabled = false;
+      console.log('RESET REFILL: Firebase DISABILITATO');
+      
+      // Copia refillCounters prima di azzerare
+      const refillCountersCopy = {...refillCounters};
+      console.log('RESET REFILL: refillCounters copiati:', refillCountersCopy);
+      
+      // Prepara i dati per l'Excel
+      const consumoDataForExcel = {};
+      
+      // Trasferisci ogni prodotto a consumo
+      Object.keys(refillCountersCopy).forEach(productName => {
+        const quantity = refillCountersCopy[productName];
+        if(quantity > 0) {
+          console.log(`RESET REFILL: Trasferendo ${productName}: qty=${quantity}`);
+          
+          // Aggiungi a consumoCounters
+          consumoCounters[productName] = (consumoCounters[productName] || 0) + quantity;
+          
+          // Aggiungi a consumoList
+          if(!consumoList[productName]) consumoList[productName] = {quantity: 0, value: 0};
+          consumoList[productName].quantity += quantity;
+          consumoList[productName].value = getEditableValue(productName) || 0;
+          
+          // Prepara per Excel: accumula le quantità per prodotti nel database
+          if(DATABASE_PRODUCTS.includes(productName)) {
+            consumoDataForExcel[productName] = (consumoDataForExcel[productName] || 0) + quantity;
+          }
+          
+          console.log(`RESET REFILL: ${productName} trasferito - consumoCounters: ${consumoCounters[productName]}, consumoList: ${JSON.stringify(consumoList[productName])}`);
+        }
       });
-      saveData();
-      // Riapri il popup per vedere i cambiamenti
-      openRefillSimple();
-    }, 'Reset Completo REFILL');
+      
+      // Debug: mostra i dati preparati per Excel
+      console.log('📊 Dati preparati per Excel:', consumoDataForExcel);
+      console.log('📊 Prodotti nel database:', DATABASE_PRODUCTS);
+      
+      // Carica automaticamente database.xlsx e aggiornalo
+      if(Object.keys(consumoDataForExcel).length > 0) {
+        try {
+          console.log('📊 Apertura dialog per selezionare database.xlsx...');
+          
+          // Crea input file nascosto che si apre automaticamente
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = '.xlsx,.xls';
+          fileInput.style.display = 'none';
+          
+          // Promessa per gestire la selezione del file
+          const filePromise = new Promise((resolve, reject) => {
+            fileInput.onchange = async (e) => {
+              const file = e.target.files[0];
+              if (file && file.name.toLowerCase().includes('database')) {
+                try {
+                  console.log('📊 Caricamento file Excel:', file.name);
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    try {
+                      const data = new Uint8Array(event.target.result);
+                      const workbook = XLSX.read(data, { type: 'array' });
+                      loadedExcelFile = workbook;
+                      console.log('✅ Database caricato con successo');
+                      resolve(workbook);
+                    } catch (error) {
+                      reject(error);
+                    }
+                  };
+                  reader.readAsArrayBuffer(file);
+                } catch (error) {
+                  reject(error);
+                }
+              } else {
+                reject(new Error('Seleziona il file database.xlsx'));
+              }
+              document.body.removeChild(fileInput);
+            };
+            
+            // Se l'utente annulla la selezione
+            fileInput.oncancel = () => {
+              reject(new Error('Selezione file annullata'));
+              document.body.removeChild(fileInput);
+            };
+          });
+          
+          // Apri il dialog
+          document.body.appendChild(fileInput);
+          fileInput.click();
+          
+          // Aspetta la selezione del file
+          const workbook = await filePromise;
+          
+          // Aggiorna il workbook con i dati di consumo
+          const updatedWorkbook = updateExcelWithConsumoData(consumoDataForExcel);
+          
+          if(updatedWorkbook) {
+            // Prova prima File System Access API, poi fallback a download
+            await saveDatabaseDirectly(updatedWorkbook);
+            console.log('✅ File Excel aggiornato');
+          }
+          
+        } catch (error) {
+          console.error('❌ Errore gestione database.xlsx:', error);
+          alert('Errore nella gestione del file database.xlsx. Operazione annullata.');
+        }
+      } else {
+        console.log('📊 Nessun dato da aggiornare in Excel');
+      }
+      
+      // Azzera refill localmente
+      refillList = {};
+      refillCounters = {};
+      console.log('RESET REFILL: Liste azzerate localmente');
+      
+      // Salva TUTTO in localStorage con Firebase disabilitato
+      const completeState = {
+        tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, 
+        refillList: {}, refillCounters: {}, maintenanceCounters, 
+        consumoCounters, consumoList, editableValues, storageValues,
+        currentBackground, currentFont, currentFontSize, fontSettings, 
+        modifiersList, subcategories
+      };
+      localStorage.setItem('breakOrdersState', JSON.stringify(completeState));
+      console.log('RESET REFILL: Salvato in localStorage con consumoCounters:', consumoCounters);
+      
+      // Ora salva su Firebase e riabilita
+      setTimeout(() => {
+        firebaseEnabled = originalFirebaseEnabled;
+        if (firebaseEnabled && database) {
+          console.log('RESET REFILL: Salvando TUTTO su Firebase...');
+          database.ref('breakOrders').set({
+            ...completeState,
+            _meta: { lastUpdated: firebase.database.ServerValue.TIMESTAMP }
+          }).then(() => {
+            console.log('RESET REFILL: Salvato su Firebase con successo');
+          });
+        }
+        
+        // Riapri popup
+        openRefillSimple();
+      }, 500);
+    }, 'Reset Refill + Excel');
   };
   
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); closePopup(); };
   
-  actionsDiv.appendChild(resetAllBtn);
+  actionsDiv.appendChild(resetBtn);
   actionsDiv.appendChild(closeBtn);
   
   showPopup();
 }
 
-function openManutenzioneRefill(){
-  popupTitle.textContent = "REFILL - MANUTENZIONE";
+// Funzione per aprire categoria REFILL con sottocategorie
+function openRefillCategory(categoryKey, categoryName, categoryColor) {
+  popupTitle.textContent = categoryName;
   orderList.innerHTML = "";
   
-  // Lista prodotti manutenzione
-  const manutenzioneProducts = [
-    'CARTA MANI',
-    'CARTA IGIENICA', 
-    'SAPONE LIQUIDO',
-    'SACCHI GRANDI',
-    'SACCHI PICCOLI',
-    'DET PAVIMENTI',
-    'DET BAGNI',
-    'DET SUPERFICI',
-    'DET ACCIAIO',
-    'SPUGNE GRANDI',
-    'SPUGNE PICCOLE',
-    'SPUGNE PIATTE',
-    'LAVABICCHIERI B',
-    'LAVABICCHIERI D'
-  ];
+  // Mappa le chiavi alle categorie del CATALOG
+  const categoryMap = {
+    'caffè': 'c1',
+    'spina': 'c2', 
+    'frigo': 'c3',
+    'super': 'c4',
+    'snack': 'c5'
+  };
   
-  // Container per centrare le liste prodotti
+  const catalogKey = categoryMap[categoryKey];
+  const products = CATALOG[catalogKey] || [];
+  
+  // Container per centrare la lista
   const container = document.createElement('div');
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.alignItems = 'center';
-  container.style.padding = '10px';
+  container.style.padding = '20px';
+  container.style.gap = '10px';
+  
+  if(products.length === 0) {
+    const emptyMsg = document.createElement('div');
+    emptyMsg.textContent = 'Nessun prodotto in questa categoria';
+    emptyMsg.style.color = '#fff';
+    emptyMsg.style.fontSize = '18px';
+    emptyMsg.style.textAlign = 'center';
+    emptyMsg.style.padding = '40px';
+    container.appendChild(emptyMsg);
+  } else {
+    // Lista prodotti - mostra solo sottocategorie o prodotti senza sottocategorie
+    products.forEach(product => {
+      // Se ha sottocategorie, mostra solo quelle
+      if(subcategories[product.name]) {
+        subcategories[product.name].forEach(subProduct => {
+          const subDiv = document.createElement('div');
+          subDiv.style.width = '75%';
+          subDiv.style.padding = '15px';
+          subDiv.style.background = categoryColor;
+          subDiv.style.borderRadius = '8px';
+          subDiv.style.color = '#fff';
+          subDiv.style.fontSize = '16px';
+          subDiv.style.fontWeight = '700';
+          subDiv.style.textAlign = 'left';
+          subDiv.style.cursor = 'pointer';
+          subDiv.style.transition = 'all 0.2s ease';
+          subDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+          subDiv.style.display = 'flex';
+          subDiv.style.justifyContent = 'space-between';
+          subDiv.style.alignItems = 'center';
+          
+          const productName = `${product.name} ${subProduct.name}`;
+          const counter = getRefillCounter(productName);
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = productName;
+          
+          const counterSpan = document.createElement('span');
+          counterSpan.textContent = counter;
+          counterSpan.style.fontSize = '14px';
+          counterSpan.style.fontWeight = '600';
+          counterSpan.style.background = 'rgba(255,255,255,0.2)';
+          counterSpan.style.padding = '4px 8px';
+          counterSpan.style.borderRadius = '12px';
+          counterSpan.style.minWidth = '24px';
+          counterSpan.style.textAlign = 'center';
+          
+          subDiv.appendChild(nameSpan);
+          subDiv.appendChild(counterSpan);
+          
+          // Effetti hover
+          subDiv.onmouseenter = () => {
+            subDiv.style.transform = 'translateY(-1px)';
+            subDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
+          };
+          subDiv.onmouseleave = () => {
+            subDiv.style.transform = 'translateY(0)';
+            subDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+          };
+          
+          // Click per ora inerte
+          subDiv.onclick = () => {
+            vibrate(VIBRATION_PATTERNS.tap);
+          };
+          
+          container.appendChild(subDiv);
+        });
+      } else {
+        // Se non ha sottocategorie, mostra il prodotto normale
+        const productDiv = document.createElement('div');
+        productDiv.style.width = '75%';
+        productDiv.style.padding = '15px';
+        productDiv.style.background = categoryColor;
+        productDiv.style.borderRadius = '8px';
+        productDiv.style.color = '#fff';
+        productDiv.style.fontSize = '16px';
+        productDiv.style.fontWeight = '700';
+        productDiv.style.textAlign = 'left';
+        productDiv.style.cursor = 'pointer';
+        productDiv.style.transition = 'all 0.2s ease';
+        productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+        productDiv.style.display = 'flex';
+        productDiv.style.justifyContent = 'space-between';
+        productDiv.style.alignItems = 'center';
+        
+        const counter = getRefillCounter(product.name);
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = product.name;
+        
+        const counterSpan = document.createElement('span');
+        counterSpan.textContent = counter;
+        counterSpan.style.fontSize = '14px';
+        counterSpan.style.fontWeight = '600';
+        counterSpan.style.background = 'rgba(255,255,255,0.2)';
+        counterSpan.style.padding = '4px 8px';
+        counterSpan.style.borderRadius = '12px';
+        counterSpan.style.minWidth = '24px';
+        counterSpan.style.textAlign = 'center';
+        
+        productDiv.appendChild(nameSpan);
+        productDiv.appendChild(counterSpan);
+        
+        // Effetti hover
+        productDiv.onmouseenter = () => {
+          productDiv.style.transform = 'translateY(-1px)';
+          productDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
+        };
+        productDiv.onmouseleave = () => {
+          productDiv.style.transform = 'translateY(0)';
+          productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+        };
+        
+        // Click per ora inerte
+        productDiv.onclick = () => {
+          vibrate(VIBRATION_PATTERNS.tap);
+        };
+        
+        container.appendChild(productDiv);
+      }
+    });
+  }
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Indietro';
+  backBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openRefillSimple(); 
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+}
+
+// Funzione per MANUTENZIONE
+function openRefillManutenzione() {
+  popupTitle.textContent = "MANUTENZIONE";
+  orderList.innerHTML = "";
+  
+  // Lista prodotti manutenzione
+  const manutenzioneProducts = [
+    'MAIONESE BIDONE', 'MAIONESE', 'KETCHUP', 'SENAPE',
+    'TOVAGLIOLI', 'CARTA ROTOLO', 'CARTA MANI', 'CARTA IGIENICA',
+    'SAPONE LIQUIDO', 'SACCHI GRANDI', 'SACCHI PICCOLI',
+    'DET PAVIMENTI', 'DET BAGNI', 'DET SUPERFICI', 'DET ACCIAIO',
+    'SPUGNE GRANDI', 'SPUGNE PICCOLE', 'SPUGNE PIATTE',
+    'LAVABICCHIERI B', 'LAVABICCHIERI D', 'LAMPADINE', 'FARETTI'
+  ];
+  
+  // Container per centrare la lista
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.padding = '20px';
+  container.style.gap = '10px';
   
   manutenzioneProducts.forEach(productName => {
-    const qty = refillList[productName] || 0;
+    const productDiv = document.createElement('div');
+    productDiv.style.width = '75%';
+    productDiv.style.padding = '15px';
+    productDiv.style.background = '#8800aa';
+    productDiv.style.borderRadius = '8px';
+    productDiv.style.color = '#fff';
+    productDiv.style.fontSize = '16px';
+    productDiv.style.fontWeight = '700';
+    productDiv.style.textAlign = 'left';
+    productDiv.style.cursor = 'pointer';
+    productDiv.style.transition = 'all 0.2s ease';
+    productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    productDiv.style.display = 'flex';
+    productDiv.style.justifyContent = 'space-between';
+    productDiv.style.alignItems = 'center';
     
-    const div = document.createElement('div');
-    div.style.width = '50%';
-    div.style.padding = '10px';
-    div.style.margin = '3px 0';
-    div.style.background = '#8800aa'; // Colore viola manutenzione
-    div.style.borderRadius = '5px';
-    div.style.display = 'flex';
-    div.style.justifyContent = 'space-between';
-    div.style.alignItems = 'center';
-    div.style.cursor = 'pointer';
+    // Forza refresh del contatore
+    const counter = maintenanceCounters[productName] || 0;
     
     const nameSpan = document.createElement('span');
     nameSpan.textContent = productName;
-    nameSpan.style.color = '#fff';
-    nameSpan.style.fontWeight = '700';
-    nameSpan.style.fontSize = '14px';
     
-    const qtySpan = document.createElement('span');
-    qtySpan.textContent = qty;
-    qtySpan.style.color = '#fff';
-    qtySpan.style.fontWeight = '700';
+    const counterSpan = document.createElement('span');
+    counterSpan.textContent = counter;
+    counterSpan.style.fontSize = '14px';
+    counterSpan.style.fontWeight = '600';
+    counterSpan.style.background = 'rgba(255,255,255,0.2)';
+    counterSpan.style.padding = '4px 8px';
+    counterSpan.style.borderRadius = '12px';
+    counterSpan.style.minWidth = '24px';
+    counterSpan.style.textAlign = 'center';
     
-    // Gestione tap normale e prolungato
+    productDiv.appendChild(nameSpan);
+    productDiv.appendChild(counterSpan);
+    
+    // Gestione tap e long tap diretti
     let pressTimer;
-    let isLongPress = false;
+    let isPressed = false;
+    let isLongTap = false;
     
-    // Desktop events
-    div.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      isLongPress = false;
+    const startPress = (e) => {
+      if(isPressed) return;
+      isPressed = true;
+      isLongTap = false;
+      // Effetto visivo di pressione
+      productDiv.style.transform = 'translateY(-1px)';
+      productDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
+      
       pressTimer = setTimeout(() => {
-        isLongPress = true;
-        vibrate(VIBRATION_PATTERNS.warning);
-        if(!refillList[productName]) refillList[productName] = 0;
-        if(refillList[productName] > 0) {
-          refillList[productName]--;
-          qtySpan.textContent = refillList[productName];
+        if(isPressed) {
+          isLongTap = true;
+          vibrate(VIBRATION_PATTERNS.warning);
+          // Long tap: rimuovi direttamente
+          decrementMaintenanceCounter(productName);
           saveData();
+          // Forza aggiornamento con un piccolo delay
+          setTimeout(() => {
+            openRefillManutenzione();
+          }, 50);
         }
-      }, 500); // 500ms per tap prolungato
-    });
+      }, 600); // 600ms per long tap
+    };
     
-    div.addEventListener('mouseup', (e) => {
-      e.preventDefault();
+    const endPress = (e) => {
       clearTimeout(pressTimer);
-      if(!isLongPress) {
-        // Tap normale: +1
+      if(isPressed && !isLongTap) {
+        // Tap normale: aggiungi
         vibrate(VIBRATION_PATTERNS.tap);
-        if(!refillList[productName]) refillList[productName] = 0;
-        refillList[productName]++;
-        qtySpan.textContent = refillList[productName];
+        incrementMaintenanceCounter(productName);
         saveData();
+        // Forza aggiornamento con un piccolo delay
+        setTimeout(() => {
+          openRefillManutenzione();
+        }, 50);
       }
-    });
+      isPressed = false;
+      isLongTap = false;
+      // Reset effetto visivo
+      productDiv.style.transform = 'translateY(0)';
+      productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    };
     
-    div.addEventListener('mouseleave', () => {
-      clearTimeout(pressTimer);
-    });
-    
-    // Mobile events
-    div.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      isLongPress = false;
-      pressTimer = setTimeout(() => {
-        isLongPress = true;
-        vibrate(VIBRATION_PATTERNS.warning);
-        if(!refillList[productName]) refillList[productName] = 0;
-        if(refillList[productName] > 0) {
-          refillList[productName]--;
-          qtySpan.textContent = refillList[productName];
-          saveData();
-        }
-      }, 500);
-    });
-    
-    div.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      clearTimeout(pressTimer);
-      if(!isLongPress) {
-        // Tap normale: +1
-        vibrate(VIBRATION_PATTERNS.tap);
-        if(!refillList[productName]) refillList[productName] = 0;
-        refillList[productName]++;
-        qtySpan.textContent = refillList[productName];
-        saveData();
+    // Effetti hover normali (solo quando non premuto)
+    productDiv.onmouseenter = () => {
+      if(!isPressed) {
+        productDiv.style.transform = 'translateY(-1px)';
+        productDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
       }
-    });
+    };
     
-    div.appendChild(nameSpan);
-    div.appendChild(qtySpan);
-    container.appendChild(div);
+    productDiv.onmouseleave = () => {
+      if(!isPressed) {
+        productDiv.style.transform = 'translateY(0)';
+        productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      }
+    };
+    
+    productDiv.ontouchstart = startPress;
+    productDiv.onmousedown = startPress;
+    productDiv.ontouchend = endPress;
+    productDiv.onmouseup = endPress;
+    productDiv.ontouchcancel = endPress;
+    
+    container.appendChild(productDiv);
   });
   
   orderList.appendChild(container);
@@ -1323,36 +2352,25 @@ function openManutenzioneRefill(){
   
   const backBtn = document.createElement('button');
   backBtn.textContent = '← Indietro';
-  backBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); openRefillSimple(); };
-  
-  const resetBtn = document.createElement('button');
-  resetBtn.textContent = 'Reset';
-  resetBtn.style.background = '#aa0000';
-  resetBtn.style.color = '#fff';
-  resetBtn.onclick = ()=> {
-    vibrate(VIBRATION_PATTERNS.warning);
-    showConfirm('Confermi il reset di MANUTENZIONE?', ()=>{
-      vibrate(VIBRATION_PATTERNS.success);
-      // Reset solo prodotti manutenzione
-      manutenzioneProducts.forEach(product => {
-        delete refillList[product];
-      });
-      saveData();
-      // Riapri la lista per vedere i cambiamenti
-      openManutenzioneRefill();
-    }, 'Reset MANUTENZIONE');
+  backBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openRefillSimple(); 
   };
   
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
-  closeBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); closePopup(); };
+  closeBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
   
   actionsDiv.appendChild(backBtn);
-  actionsDiv.appendChild(resetBtn);
   actionsDiv.appendChild(closeBtn);
 }
 
-function openRefillCategory(categoryKey, categoryName, categoryColor){
+
+/* Popup Spesa */
+function openSpesaPopup(){
   popupTitle.textContent = `REFILL - ${categoryName}`;
   orderList.innerHTML = "";
   
@@ -1361,16 +2379,9 @@ function openRefillCategory(categoryKey, categoryName, categoryColor){
   if(products.length === 0){
     orderList.innerHTML = "<div style='padding:20px;text-align:center;color:#fff;'>Nessun prodotto in questa categoria</div>";
   } else {
-    // Container per centrare le liste prodotti
-    const container = document.createElement('div');
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.padding = '10px';
-    
     // Array per raccogliere tutti i prodotti (inclusi quelli nelle sottocategorie)
     const allProducts = [];
-    
+
     products.forEach(product => {
       // Se il prodotto ha una sottocategoria, espandi SOLO i suoi prodotti (non il base)
       if(subcategories[product.name]){
@@ -1382,37 +2393,142 @@ function openRefillCategory(categoryKey, categoryName, categoryColor){
         allProducts.push(product);
       }
     });
-    
+
+    // Renderizza prodotti come lista semplice (formato originale)
     allProducts.forEach(product => {
-      const qty = refillList[product.name] || 0;
+      const qty = getRefillQuantity(product.name);
       
-      const div = document.createElement('div');
-      div.style.width = '50%';
-      div.style.padding = '10px';
-      div.style.margin = '3px 0';
-      div.style.background = categoryColor;
-      div.style.borderRadius = '5px';
-      div.style.display = 'flex';
-      div.style.justifyContent = 'space-between';
-      div.style.alignItems = 'center';
+      const row = document.createElement('div');
+      row.className = 'order-row';
+      row.style.display = 'flex';
+      row.style.flexDirection = 'column';
+      row.style.gap = '8px';
+      row.style.padding = '10px';
+      row.style.background = 'rgba(255,255,255,0.05)';
+      row.style.borderRadius = '4px';
+      row.style.margin = '2px 0';
+      row.style.borderLeft = `4px solid ${categoryColor}`;
       
-      const nameSpan = document.createElement('span');
-      nameSpan.textContent = product.name;
-      nameSpan.style.color = '#fff';
-      nameSpan.style.fontWeight = '700';
-      nameSpan.style.fontSize = '14px'; // Leggermente più piccolo per le sottocategorie
+      // Prima riga: nome e controlli quantità
+      const topRow = document.createElement('div');
+      topRow.style.display = 'grid';
+      topRow.style.gridTemplateColumns = '2fr 1fr';
+      topRow.style.alignItems = 'center';
+      topRow.style.gap = '10px';
       
-      const qtySpan = document.createElement('span');
-      qtySpan.textContent = qty;
-      qtySpan.style.color = '#fff';
-      qtySpan.style.fontWeight = '700';
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = product.name;
+      nameDiv.style.fontFamily = fontSettings.refill.font;
+      nameDiv.style.fontSize = fontSettings.refill.size + 'px';
+      nameDiv.style.fontWeight = '700';
+      nameDiv.style.color = fontSettings.refill.color;
       
-      div.appendChild(nameSpan);
-      div.appendChild(qtySpan);
-      container.appendChild(div);
+      // Container controlli quantità
+      const qtyControls = document.createElement('div');
+      qtyControls.style.display = 'flex';
+      qtyControls.style.alignItems = 'center';
+      qtyControls.style.gap = '8px';
+      qtyControls.style.justifyContent = 'center';
+
+      // Bottone -
+      const minusBtn = document.createElement('button');
+      minusBtn.textContent = '−';
+      minusBtn.style.width = '30px';
+      minusBtn.style.height = '30px';
+      minusBtn.style.borderRadius = '50%';
+      minusBtn.style.border = '2px solid #fff';
+      minusBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+      minusBtn.style.color = '#fff';
+      minusBtn.style.fontSize = '16px';
+      minusBtn.style.fontWeight = '700';
+      minusBtn.style.cursor = 'pointer';
+      minusBtn.style.transition = 'all 0.2s ease';
+      minusBtn.onclick = (e) => {
+        e.stopPropagation();
+        vibrate(VIBRATION_PATTERNS.tap);
+        if(getRefillQuantity(product.name) > 0) {
+          setRefillQuantity(product.name, getRefillQuantity(product.name) - 1);
+          const updatedQty = getRefillQuantity(product.name);
+          qtyDisplay.textContent = updatedQty;
+          saveData();
+        }
+      };
+
+      // Display quantità
+      const qtyDisplay = document.createElement('div');
+      qtyDisplay.textContent = qty;
+      qtyDisplay.style.fontSize = '18px';
+      qtyDisplay.style.fontWeight = '700';
+      qtyDisplay.style.color = '#fff';
+      qtyDisplay.style.minWidth = '30px';
+      qtyDisplay.style.textAlign = 'center';
+
+      // Bottone +
+      const plusBtn = document.createElement('button');
+      plusBtn.textContent = '+';
+      plusBtn.style.width = '30px';
+      plusBtn.style.height = '30px';
+      plusBtn.style.borderRadius = '50%';
+      plusBtn.style.border = '2px solid #fff';
+      plusBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+      plusBtn.style.color = '#fff';
+      plusBtn.style.fontSize = '16px';
+      plusBtn.style.fontWeight = '700';
+      plusBtn.style.cursor = 'pointer';
+      plusBtn.style.transition = 'all 0.2s ease';
+      plusBtn.onclick = (e) => {
+        e.stopPropagation();
+        vibrate(VIBRATION_PATTERNS.tap);
+        addRefillQuantity(product.name, 1);
+        const updatedQty = getRefillQuantity(product.name);
+        qtyDisplay.textContent = updatedQty;
+        saveData();
+      };
+
+      qtyControls.appendChild(minusBtn);
+      qtyControls.appendChild(qtyDisplay);
+      qtyControls.appendChild(plusBtn);
+      
+      topRow.appendChild(nameDiv);
+      topRow.appendChild(qtyControls);
+      
+      // Seconda riga: campo valore
+      const valueRow = document.createElement('div');
+      valueRow.style.display = 'flex';
+      valueRow.style.alignItems = 'center';
+      valueRow.style.gap = '5px';
+      
+      const valueLabel = document.createElement('span');
+      valueLabel.textContent = 'Valore unitario:';
+      valueLabel.style.color = '#fff';
+      valueLabel.style.fontSize = '12px';
+      
+      const valueInput = document.createElement('input');
+      valueInput.type = 'number';
+      valueInput.step = '0.001';
+      valueInput.min = '0';
+      valueInput.value = (getRefillValue(product.name) || 0).toString();
+      valueInput.placeholder = '0';
+      valueInput.style.width = '60px';
+      valueInput.style.padding = '2px 4px';
+      valueInput.style.fontSize = '12px';
+      valueInput.style.border = '1px solid #ccc';
+      valueInput.style.borderRadius = '3px';
+      valueInput.style.background = '#fff';
+      
+      valueInput.onchange = () => {
+        const newValue = parseFloat(valueInput.value) || 0;
+        setRefillValue(product.name, newValue);
+        saveData();
+      };
+      
+      valueRow.appendChild(valueLabel);
+      valueRow.appendChild(valueInput);
+      
+      row.appendChild(topRow);
+      row.appendChild(valueRow);
+      orderList.appendChild(row);
     });
-    
-    orderList.appendChild(container);
   }
   
   // Bottoni azioni
@@ -1428,20 +2544,22 @@ function openRefillCategory(categoryKey, categoryName, categoryColor){
   resetBtn.style.color = '#fff';
   resetBtn.onclick = ()=> {
     vibrate(VIBRATION_PATTERNS.warning);
-    showConfirm(`Confermi il reset di ${categoryName}?`, ()=>{
+    showConfirm(`Confermi il reset di ${categoryName}? (Solo quantità, valori mantenuti)`, ()=>{
       vibrate(VIBRATION_PATTERNS.success);
-      // Reset solo prodotti di questa categoria
+      // Reset solo quantità prodotti di questa categoria, mantenendo i valori unitari
+      const categoryProductNames = [];
       const catalogProducts = CATALOG[categoryKey] || [];
       catalogProducts.forEach(product => {
-        // Reset prodotto base
-        delete refillList[product.name];
-        // Reset sottocategorie se esistono
+        // Aggiungi prodotto base
+        categoryProductNames.push(product.name);
+        // Aggiungi sottocategorie se esistono
         if(subcategories[product.name]){
           subcategories[product.name].forEach(subProduct => {
-            delete refillList[`${product.name} ${subProduct.name}`];
+            categoryProductNames.push(`${product.name} ${subProduct.name}`);
           });
         }
       });
+      resetRefillQuantitiesOnly(categoryProductNames);
       saveData();
       // Riapri la lista per vedere i cambiamenti
       openRefillCategory(categoryKey, categoryName, categoryColor);
@@ -1496,11 +2614,11 @@ function openRefillStandardPopup(){
 
 function renderRefillCategories(){
   const categories = [
-    { key: 'c1', name: 'CAFFÈ', color: '#888', catalog: CATALOG.c1 },
-    { key: 'c2', name: 'SPINA', color: '#ff8800', catalog: CATALOG.c2 },
-    { key: 'c3', name: 'FRIGO', color: '#0099ff', catalog: CATALOG.c3 },
-    { key: 'c4', name: 'SUPER', color: '#aaaa00', catalog: CATALOG.c4 },
-    { key: 'c5', name: 'SNACK', color: '#ff0000', catalog: CATALOG.c5 }
+    { key: 'c1', name: 'REFILL CAFFÈ', color: '#888', catalog: CATALOG.c1 },
+    { key: 'c2', name: 'REFILL SPINA', color: '#ff8800', catalog: CATALOG.c2 },
+    { key: 'c3', name: 'REFILL FRIGO', color: '#0099ff', catalog: CATALOG.c3 },
+    { key: 'c4', name: 'REFILL SUPER', color: '#aaaa00', catalog: CATALOG.c4 },
+    { key: 'c5', name: 'REFILL SNACK', color: '#ff0000', catalog: CATALOG.c5 }
   ];
   
   categories.forEach(cat => {
@@ -1517,7 +2635,7 @@ function renderRefillCategories(){
     
     const nameDiv = document.createElement('div');
     nameDiv.textContent = cat.name;
-    nameDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    nameDiv.style.fontFamily = fontSettings.refill.font;
     nameDiv.style.fontSize = fontSettings.refill.size + 'px';
     nameDiv.style.fontWeight = '700';
     nameDiv.style.color = fontSettings.refill.color;
@@ -1563,35 +2681,77 @@ function openRefillCategoryStandard(categoryKey, categoryName, categoryColor, ca
   
   // Renderizza prodotti come righe ordine
   allProducts.forEach(product => {
-    const qty = refillList[product.name] || 0;
+    const qty = getRefillQuantity(product.name);
     
     const row = document.createElement('div');
     row.className = 'order-row';
-    row.style.display = 'grid';
-    row.style.gridTemplateColumns = '1fr auto';
-    row.style.alignItems = 'center';
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
+    row.style.gap = '8px';
     row.style.padding = '10px';
     row.style.background = 'rgba(255,255,255,0.05)';
     row.style.borderRadius = '4px';
     row.style.margin = '2px 0';
     row.style.borderLeft = `4px solid ${categoryColor}`;
     
+    // Prima riga: nome e quantità
+    const topRow = document.createElement('div');
+    topRow.style.display = 'grid';
+    topRow.style.gridTemplateColumns = '1fr auto';
+    topRow.style.alignItems = 'center';
+    
     const nameDiv = document.createElement('div');
     nameDiv.textContent = product.name;
-    nameDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    nameDiv.style.fontFamily = fontSettings.refill.font;
     nameDiv.style.fontSize = fontSettings.refill.size + 'px';
     nameDiv.style.fontWeight = '700';
     nameDiv.style.color = fontSettings.refill.color;
     
     const qtyDiv = document.createElement('div');
     qtyDiv.textContent = `Qty: ${qty}`;
-    qtyDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    qtyDiv.style.fontFamily = fontSettings.refill.font;
     qtyDiv.style.fontSize = (fontSettings.refill.size - 2) + 'px';
     qtyDiv.style.fontWeight = '700';
     qtyDiv.style.color = categoryColor;
     
-    row.appendChild(nameDiv);
-    row.appendChild(qtyDiv);
+    topRow.appendChild(nameDiv);
+    topRow.appendChild(qtyDiv);
+    
+    // Seconda riga: campo valore
+    const valueRow = document.createElement('div');
+    valueRow.style.display = 'flex';
+    valueRow.style.alignItems = 'center';
+    valueRow.style.gap = '5px';
+    
+    const valueLabel = document.createElement('span');
+    valueLabel.textContent = 'Valore unitario:';
+    valueLabel.style.color = '#fff';
+    valueLabel.style.fontSize = '12px';
+    
+    const valueInput = document.createElement('input');
+    valueInput.type = 'number';
+    valueInput.step = '0.1';
+    valueInput.min = '0';
+    valueInput.value = (getRefillValue(product.name) || 0).toString();
+    valueInput.placeholder = '0';
+    valueInput.style.width = '60px';
+    valueInput.style.padding = '2px 4px';
+    valueInput.style.fontSize = '12px';
+    valueInput.style.border = '1px solid #ccc';
+    valueInput.style.borderRadius = '3px';
+    valueInput.style.background = '#fff';
+    
+    valueInput.onchange = () => {
+      const newValue = parseFloat(valueInput.value) || 0;
+      setRefillValue(product.name, newValue);
+      saveData();
+    };
+    
+    valueRow.appendChild(valueLabel);
+    valueRow.appendChild(valueInput);
+    
+    row.appendChild(topRow);
+    row.appendChild(valueRow);
     orderList.appendChild(row);
   });
   
@@ -1609,11 +2769,10 @@ function openRefillCategoryStandard(categoryKey, categoryName, categoryColor, ca
   resetBtn.textContent = 'Reset';
   resetBtn.onclick = ()=> {
     vibrate(VIBRATION_PATTERNS.warning);
-    showConfirm(`Confermi il reset di ${categoryName}?`, ()=>{
+    showConfirm(`Confermi il reset di ${categoryName}? (Solo quantità, valori mantenuti)`, ()=>{
       vibrate(VIBRATION_PATTERNS.success);
-      catalogProducts.forEach(product => {
-        delete refillList[product.name];
-      });
+      // Reset solo quantità prodotti di questa categoria, mantenendo i valori unitari
+      resetRefillQuantitiesOnly(catalogProducts.map(p => p.name));
       saveData();
       openRefillCategoryStandard(categoryKey, categoryName, categoryColor, catalogProducts);
     }, `Reset ${categoryName}`);
@@ -1675,12 +2834,11 @@ function openRefillPopup(){
   // Titolo
   const title = document.createElement('div');
   title.textContent = 'REFILL - Seleziona Categoria';
-  title.style.fontSize = (fontSettings.refill.size + 6) + 'px';
-  title.style.setProperty('font-family', fontSettings.refill.font, 'important');
+  title.style.fontSize = '24px';
   title.style.fontWeight = '700';
   title.style.textAlign = 'center';
   title.style.marginBottom = '30px';
-  title.style.color = fontSettings.refill.color;
+  title.style.color = '#fff';
   refillContent.appendChild(title);
   
   // Container bottoni categorie (50% larghezza, centrati)
@@ -1693,23 +2851,22 @@ function openRefillPopup(){
   
   // Definizione categorie
   const categories = [
-    { key: 'c1', name: 'CAFFÈ', color: '#888', catalog: CATALOG.c1 },
-    { key: 'c2', name: 'SPINA', color: '#ff8800', catalog: CATALOG.c2 },
-    { key: 'c3', name: 'FRIGO', color: '#0099ff', catalog: CATALOG.c3 },
-    { key: 'c4', name: 'SUPER', color: '#aaaa00', catalog: CATALOG.c4 },
-    { key: 'c5', name: 'SNACK', color: '#ff0000', catalog: CATALOG.c5 }
+    { key: 'c1', name: 'REFILL CAFFÈ', color: '#888', catalog: CATALOG.c1 },
+    { key: 'c2', name: 'REFILL SPINA', color: '#ff8800', catalog: CATALOG.c2 },
+    { key: 'c3', name: 'REFILL FRIGO', color: '#0099ff', catalog: CATALOG.c3 },
+    { key: 'c4', name: 'REFILL SUPER', color: '#aaaa00', catalog: CATALOG.c4 },
+    { key: 'c5', name: 'REFILL SNACK', color: '#ff0000', catalog: CATALOG.c5 }
   ];
   
   categories.forEach(cat => {
     const btn = document.createElement('button');
     btn.textContent = cat.name;
     btn.type = 'button';
-    btn.style.padding = fontSettings.refill.padding + 'px';
-    btn.style.fontSize = fontSettings.refill.size + 'px';
-    btn.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    btn.style.padding = '20px';
+    btn.style.fontSize = '20px';
     btn.style.fontWeight = '700';
     btn.style.background = cat.color;
-    btn.style.color = fontSettings.refill.color;
+    btn.style.color = '#fff';
     btn.style.border = 'none';
     btn.style.borderRadius = '10px';
     btn.style.cursor = 'pointer';
@@ -1796,12 +2953,11 @@ function openRefillCategoryList(categoryKey, categoryName, categoryColor, catalo
   // Titolo
   const title = document.createElement('div');
   title.textContent = `REFILL - ${categoryName}`;
-  title.style.fontSize = (fontSettings.refill.size + 6) + 'px';
-  title.style.setProperty('font-family', fontSettings.refill.font, 'important');
+  title.style.fontSize = '24px';
   title.style.fontWeight = '700';
   title.style.textAlign = 'center';
   title.style.marginBottom = '20px';
-  title.style.color = fontSettings.refill.color;
+  title.style.color = '#fff';
   refillContent.appendChild(title);
   
   // Bottoni azioni
@@ -1850,8 +3006,12 @@ function openRefillCategoryList(categoryKey, categoryName, categoryColor, catalo
     vibrate(VIBRATION_PATTERNS.warning);
     showConfirm(`Confermi il reset di ${categoryName}?`, ()=>{
       vibrate(VIBRATION_PATTERNS.success);
-      // Reset solo prodotti di questa categoria
+      // Prima di azzerare, aggiungi le quantità ai contatori consumo
       catalogProducts.forEach(product => {
+        const quantity = getRefillQuantity(product.name);
+        if(quantity > 0) {
+          incrementConsumoCounter(product.name, quantity);
+        }
         delete refillList[product.name];
       });
       saveData();
@@ -1896,18 +3056,16 @@ function openRefillCategoryList(categoryKey, categoryName, categoryColor, catalo
   });
   
   allProducts.forEach(product => {
-    const qty = refillList[product.name] || 0;
+    const qty = getRefillQuantity(product.name);
     
     const row = document.createElement('div');
-    row.style.display = 'grid';
-    row.style.gridTemplateColumns = '2fr 1fr';
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
     row.style.gap = '10px';
-    row.style.alignItems = 'center';
     row.style.padding = '15px';
     row.style.background = categoryColor;
     row.style.borderRadius = '8px';
     row.style.transition = 'transform 0.2s ease';
-    row.style.cursor = 'pointer';
     
     row.onmouseenter = () => {
       row.style.transform = 'scale(1.02)';
@@ -1916,23 +3074,65 @@ function openRefillCategoryList(categoryKey, categoryName, categoryColor, catalo
       row.style.transform = 'scale(1)';
     };
     
+    // Prima riga: nome e quantità
+    const topRow = document.createElement('div');
+    topRow.style.display = 'grid';
+    topRow.style.gridTemplateColumns = '2fr 1fr';
+    topRow.style.gap = '10px';
+    topRow.style.alignItems = 'center';
+    topRow.style.cursor = 'pointer';
+    
     const nameDiv = document.createElement('div');
     nameDiv.textContent = product.name;
-    nameDiv.style.fontSize = fontSettings.refill.size + 'px';
-    nameDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    nameDiv.style.fontSize = '16px';
     nameDiv.style.fontWeight = '700';
-    nameDiv.style.color = fontSettings.refill.color;
+    nameDiv.style.color = '#fff';
     
     const qtyDiv = document.createElement('div');
     qtyDiv.textContent = qty;
-    qtyDiv.style.fontSize = (fontSettings.refill.size + 4) + 'px';
-    qtyDiv.style.setProperty('font-family', fontSettings.refill.font, 'important');
+    qtyDiv.style.fontSize = '20px';
     qtyDiv.style.fontWeight = '700';
     qtyDiv.style.textAlign = 'center';
-    qtyDiv.style.color = fontSettings.refill.color;
+    qtyDiv.style.color = '#fff';
     
-    row.appendChild(nameDiv);
-    row.appendChild(qtyDiv);
+    topRow.appendChild(nameDiv);
+    topRow.appendChild(qtyDiv);
+    
+    // Seconda riga: campo valore
+    const valueRow = document.createElement('div');
+    valueRow.style.display = 'flex';
+    valueRow.style.alignItems = 'center';
+    valueRow.style.gap = '5px';
+    
+    const valueLabel = document.createElement('span');
+    valueLabel.textContent = 'Valore unitario:';
+    valueLabel.style.color = '#fff';
+    valueLabel.style.fontSize = '12px';
+    
+    const valueInput = document.createElement('input');
+    valueInput.type = 'number';
+    valueInput.step = '0.1';
+    valueInput.min = '0';
+    valueInput.value = (getRefillValue(product.name) || 0).toString();
+    valueInput.placeholder = '0';
+    valueInput.style.width = '60px';
+    valueInput.style.padding = '2px 4px';
+    valueInput.style.fontSize = '12px';
+    valueInput.style.border = '1px solid #ccc';
+    valueInput.style.borderRadius = '3px';
+    valueInput.style.background = '#fff';
+    
+    valueInput.onchange = () => {
+      const newValue = parseFloat(valueInput.value) || 0;
+      setRefillValue(product.name, newValue);
+      saveData();
+    };
+    
+    valueRow.appendChild(valueLabel);
+    valueRow.appendChild(valueInput);
+    
+    row.appendChild(topRow);
+    row.appendChild(valueRow);
     gridContainer.appendChild(row);
   });
   
@@ -1992,9 +3192,9 @@ function updateRefillFromItems(items){
     const isRefill = isRefillProductName(productName);
     console.log('Checking item:', item.name, '-> Clean name:', productName, 'Is REFILL?', isRefill, 'Qty:', item.qty);
     if(isRefill){
-      if(!refillList[productName]) refillList[productName] = 0;
-      refillList[productName] += (item.qty || 1);
-      console.log('Updated refillList:', productName, '=', refillList[productName]);
+      if(!refillList[productName]) refillList[productName] = {quantity: 0, value: 0};
+      refillList[productName].quantity += (item.qty || 1);
+      console.log('Updated refillList:', productName, '=', refillList[productName].quantity);
     }
   });
   saveData();
@@ -2009,6 +3209,10 @@ function openSpesaPopup(){
   const popupContent = document.querySelector('.popup-content');
   popupContent.classList.add('spesa-popup');
   
+  // Nascondi solo la scritta "ORDINE" mantenendo i tasti azione
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  
   // Nascondi elementi non necessari
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
@@ -2022,16 +3226,1087 @@ function openSpesaPopup(){
   // Svuota la lista ordini (area principale)
   orderList.innerHTML = "";
   
-  // Bottoni azioni
+  // Container per centrare i tasti (stile refill)
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  
+  // Bottoni principali con stile refill
+  const spesaButtons = [
+    { name: 'MAGAZZINO', color: '#000000' },
+    { name: 'CARRELLO', color: '#000000' }
+  ];
+  
+  spesaButtons.forEach(btn => {
+    const button = document.createElement('button');
+    button.textContent = btn.name;
+    button.style.width = '75%';
+    button.style.padding = '20px';
+    button.style.fontSize = '18px';
+    button.style.fontWeight = '700';
+    button.style.background = btn.color;
+    button.style.color = '#fff';
+    button.style.border = 'none';
+    button.style.borderRadius = '8px';
+    button.style.cursor = 'pointer';
+    button.style.transition = 'all 0.2s ease';
+    button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    
+    // Effetti hover
+    button.onmouseenter = () => {
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';
+    };
+    button.onmouseleave = () => {
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    };
+    
+    // Click handlers
+    button.onclick = () => {
+      vibrate(VIBRATION_PATTERNS.tap);
+      if(btn.name === 'MAGAZZINO') {
+        openMagazzinoPopup();
+      } else if(btn.name === 'CARRELLO') {
+        alert('Funzione Carrello');
+      }
+    };
+    
+    container.appendChild(button);
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni (stile refill)
   actionsDiv.innerHTML = "";
   
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
-  closeBtn.onclick = ()=> {
-    vibrate(VIBRATION_PATTERNS.tap);
-    closePopup();
+  closeBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
   };
   
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+/* Popup Magazzino */
+function openMagazzinoPopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi solo la scritta "ORDINE" mantenendo i tasti azione
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  
+  // Nascondi elementi non necessari
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = "MAGAZZINO";
+  
+  // Svuota la lista ordini (area principale)
+  orderList.innerHTML = "";
+  
+  // Container per centrare i tasti (stile refill)
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  
+  // Bottoni principali con stile refill
+  const magazzinoButtons = [
+    { name: 'CONSUMO', color: '#000000' },
+    { name: 'STORAGE', color: '#000000' }
+  ];
+  
+  magazzinoButtons.forEach(btn => {
+    const button = document.createElement('button');
+    button.textContent = btn.name;
+    button.style.width = '75%';
+    button.style.padding = '20px';
+    button.style.fontSize = '18px';
+    button.style.fontWeight = '700';
+    button.style.background = btn.color;
+    button.style.color = '#fff';
+    button.style.border = 'none';
+    button.style.borderRadius = '8px';
+    button.style.cursor = 'pointer';
+    button.style.transition = 'all 0.2s ease';
+    button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    
+    // Effetti hover
+    button.onmouseenter = () => {
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';
+    };
+    button.onmouseleave = () => {
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    };
+    
+    // Click handlers
+    button.onclick = () => {
+      vibrate(VIBRATION_PATTERNS.tap);
+      if(btn.name === 'CONSUMO') {
+        openConsumoPopup();
+      } else if(btn.name === 'STORAGE') {
+        openStoragePopup();
+      }
+    };
+    
+    container.appendChild(button);
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni (stile refill con Indietro + Chiudi)
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openSpesaPopup(); // Torna al popup spesa
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+
+
+// Funzione per ottenere tutte le sottocategorie storage
+function getAllStorageCategories() {
+  const storageCategories = [];
+  
+  // STORAGE CAFFÈ
+  storageCategories.push('STORAGE CAFFÈ', 'STORAGE CAFFÈ DECA');
+  
+  // STORAGE SPINA
+  storageCategories.push('STORAGE PYRASER', 'STORAGE ARIA', 'STORAGE GUINNESS', 'STORAGE GLERA', 'STORAGE APEROL', 'STORAGE CAMPARI', 'STORAGE CYNAR');
+  
+  // STORAGE FRIGO (da catalogo c3)
+  const frigoProducts = CATALOG['c3'] || [];
+  frigoProducts.forEach(product => {
+    if(subcategories[product.name]) {
+      subcategories[product.name].forEach(subProduct => {
+        storageCategories.push(`STORAGE ${product.name} ${subProduct.name}`);
+      });
+    } else {
+      storageCategories.push(`STORAGE ${product.name}`);
+    }
+  });
+  
+  // STORAGE SUPER (da catalogo c4 con modifiche)
+  const superProducts = CATALOG['c4'] || [];
+  superProducts.forEach(product => {
+    if(subcategories[product.name]) {
+      subcategories[product.name].forEach(subProduct => {
+        const originalName = `${product.name} ${subProduct.name}`;
+        let finalName = `STORAGE ${originalName}`;
+        
+        // Sostituzioni specifiche
+        if(originalName === 'COCKTAILS GIN TONIC') {
+          finalName = 'STORAGE GIN TANQUERAY';
+        } else if(originalName === 'COCKTAILS GIN TONIC H') {
+          finalName = 'STORAGE GIN HENDRICKS';
+        } else if(originalName === 'COCKTAILS RUM COLA') {
+          finalName = 'STORAGE BACARDI';
+        } else if(originalName === 'COCKTAILS VODKA TONIC') {
+          finalName = 'STORAGE SKYYE';
+        } else if(originalName === 'COCKTAILS AMERICANO') {
+          finalName = 'STORAGE MARTINI ROSSO';
+        }
+        
+        storageCategories.push(finalName);
+      });
+    } else {
+      storageCategories.push(`STORAGE ${product.name}`);
+    }
+  });
+  
+  // STORAGE SNACK
+  storageCategories.push('STORAGE PROSCIUTTO', 'STORAGE FORMAGGIO', 'STORAGE PANE TOAST', 'STORAGE PANE HOT DOG');
+  
+  // STORAGE MANUTENZIONE
+  const manutenzioneProducts = ['CARTA MANI', 'CARTA IGIENICA', 'SAPONE LIQUIDO', 'SACCHI GRANDI', 'SACCHI PICCOLI', 'DET PAVIMENTI', 'DET BAGNI', 'DET SUPERFICI', 'DET ACCIAIO', 'SPUGNE GRANDI', 'SPUGNE PICCOLE', 'SPUGNE PIATTE', 'LAVABICCHIERI B', 'LAVABICCHIERI D'];
+  manutenzioneProducts.forEach(product => {
+    storageCategories.push(`STORAGE ${product}`);
+  });
+  
+  return storageCategories.sort();
+}
+
+// Funzione helper per creare una riga prodotto nella sezione STORAGE
+function createStorageProductRow(container, productName, categoryColor) {
+  const productDiv = document.createElement('div');
+  productDiv.style.width = '75%';
+  productDiv.style.padding = '15px';
+  productDiv.style.background = categoryColor;
+  productDiv.style.borderRadius = '8px';
+  productDiv.style.color = '#fff';
+  productDiv.style.fontSize = '16px';
+  productDiv.style.fontWeight = '700';
+  productDiv.style.textAlign = 'left';
+  productDiv.style.cursor = 'pointer';
+  productDiv.style.transition = 'all 0.2s ease';
+  productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+  productDiv.style.display = 'flex';
+  productDiv.style.justifyContent = 'space-between';
+  productDiv.style.alignItems = 'center';
+  
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = productName;
+  nameSpan.style.flex = '1';
+  nameSpan.style.marginRight = '10px';
+  
+  // Valore storage (verde)
+  const storageValue = getStorageValue(productName);
+  const valueSpan = document.createElement('span');
+  valueSpan.textContent = storageValue.toFixed(2);
+  valueSpan.style.fontSize = '14px';
+  valueSpan.style.fontWeight = '700';
+  valueSpan.style.background = 'rgba(100,255,100,0.4)';
+  valueSpan.style.padding = '6px 12px';
+  valueSpan.style.borderRadius = '8px';
+  valueSpan.style.minWidth = '60px';
+  valueSpan.style.textAlign = 'center';
+  valueSpan.style.border = '1px solid rgba(100,255,100,0.6)';
+  valueSpan.title = `Valore storage: ${storageValue.toFixed(2)}`;
+  
+  productDiv.appendChild(nameSpan);
+  productDiv.appendChild(valueSpan);
+  
+  // Effetti hover
+  productDiv.onmouseenter = () => {
+    productDiv.style.transform = 'translateY(-1px)';
+    productDiv.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
+  };
+  productDiv.onmouseleave = () => {
+    productDiv.style.transform = 'translateY(0)';
+    productDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+  };
+  
+  productDiv.onclick = () => {
+    vibrate(VIBRATION_PATTERNS.tap);
+    // Qui si può aggiungere logica per modificare il valore manualmente
+  };
+  
+  container.appendChild(productDiv);
+}
+
+
+
+/* Popup Consumo */
+function openConsumoPopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi solo la scritta "ORDINE" mantenendo i tasti azione
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  
+  // Nascondi elementi non necessari
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = "CONSUMO";
+  
+  // Svuota la lista ordini (area principale)
+  orderList.innerHTML = "";
+  
+  // Container per centrare i tasti (stile refill)
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  
+  // Bottoni principali con stile refill
+  const consumoButtons = [
+    { name: 'CONSUMO CAFFÈ', color: '#888888' },
+    { name: 'CONSUMO SPINA', color: '#ff8800' },
+    { name: 'CONSUMO FRIGO', color: '#0099ff' },
+    { name: 'CONSUMO SUPER', color: '#aaaa00' },
+    { name: 'CONSUMO SNACK', color: '#ff0000' },
+    { name: 'CONSUMO MANUTENZIONE', color: '#8800aa' }
+  ];
+  
+  consumoButtons.forEach(btn => {
+    const button = document.createElement('button');
+    button.textContent = btn.name;
+    button.style.width = '75%';
+    button.style.padding = '20px';
+    button.style.fontSize = '18px';
+    button.style.fontWeight = '700';
+    button.style.background = btn.color;
+    button.style.color = '#fff';
+    button.style.border = 'none';
+    button.style.borderRadius = '8px';
+    button.style.cursor = 'pointer';
+    button.style.transition = 'all 0.2s ease';
+    button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    
+    // Effetti hover
+    button.onmouseenter = () => {
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';
+    };
+    button.onmouseleave = () => {
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    };
+    
+    // Click handlers
+    button.onclick = () => {
+      vibrate(VIBRATION_PATTERNS.tap);
+      if(btn.name === 'CONSUMO CAFFÈ') {
+        openConsumoCaffePopup();
+      } else if(btn.name === 'CONSUMO SPINA') {
+        openConsumoSpinaPopup();
+      } else if(btn.name === 'CONSUMO FRIGO') {
+        openConsumoFrigoPopup();
+      } else if(btn.name === 'CONSUMO SUPER') {
+        openConsumoSuperPopup();
+      } else if(btn.name === 'CONSUMO SNACK') {
+        openConsumoSnackPopup();
+      } else if(btn.name === 'CONSUMO MANUTENZIONE') {
+        openConsumoManutenzionePopup();
+      }
+    };
+    
+    container.appendChild(button);
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni (stile refill con Indietro + Chiudi)
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openMagazzinoPopup(); // Torna al popup magazzino
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+/* Popup Storage */
+function openStoragePopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi solo la scritta "ORDINE" mantenendo i tasti azione
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  
+  // Nascondi elementi non necessari
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = "STORAGE";
+  
+  // Svuota la lista ordini (area principale)
+  orderList.innerHTML = "";
+  
+  // Container per centrare i tasti (stile refill)
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  
+  // Bottoni principali con stile refill
+  const storageButtons = [
+    { name: 'STORAGE CAFFÈ', color: '#888888' },
+    { name: 'STORAGE SPINA', color: '#ff8800' },
+    { name: 'STORAGE FRIGO', color: '#0099ff' },
+    { name: 'STORAGE SUPER', color: '#aaaa00' },
+    { name: 'STORAGE SNACK', color: '#ff0000' },
+    { name: 'STORAGE MANUTENZIONE', color: '#8800aa' }
+  ];
+  
+  storageButtons.forEach(btn => {
+    const button = document.createElement('button');
+    button.textContent = btn.name;
+    button.style.width = '75%';
+    button.style.padding = '20px';
+    button.style.fontSize = '18px';
+    button.style.fontWeight = '700';
+    button.style.background = btn.color;
+    button.style.color = '#fff';
+    button.style.border = 'none';
+    button.style.borderRadius = '8px';
+    button.style.cursor = 'pointer';
+    button.style.transition = 'all 0.2s ease';
+    button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    
+    // Effetti hover
+    button.onmouseenter = () => {
+      button.style.transform = 'translateY(-2px)';
+      button.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';
+    };
+    button.onmouseleave = () => {
+      button.style.transform = 'translateY(0)';
+      button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    };
+    
+    // Click handlers
+    button.onclick = () => {
+      vibrate(VIBRATION_PATTERNS.tap);
+      if(btn.name === 'STORAGE CAFFÈ') {
+        openStorageCaffePopup();
+      } else if(btn.name === 'STORAGE SPINA') {
+        openStorageSpinaPopup();
+      } else if(btn.name === 'STORAGE FRIGO') {
+        openStorageFrigoPopup();
+      } else if(btn.name === 'STORAGE SUPER') {
+        openStorageSuperPopup();
+      } else if(btn.name === 'STORAGE SNACK') {
+        openStorageSnackPopup();
+      } else if(btn.name === 'STORAGE MANUTENZIONE') {
+        openStorageManutenzionePopup();
+      }
+    };
+    
+    container.appendChild(button);
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni (stile refill con Indietro + Chiudi)
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openMagazzinoPopup(); // Torna al popup magazzino
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+
+/* Popup Consumo Categorie */
+function openConsumoCaffePopup(){
+  openCategoryPopup('c1', 'CONSUMO CAFFÈ', '#888888', 'CONSUMO', openConsumoPopup);
+}
+
+function openConsumoSpinaPopup(){
+  openCategoryPopup('c2', 'CONSUMO SPINA', '#ff8800', 'CONSUMO', openConsumoPopup);
+}
+
+function openConsumoFrigoPopup(){
+  openCategoryPopup('c3', 'CONSUMO FRIGO', '#0099ff', 'CONSUMO', openConsumoPopup);
+}
+
+function openConsumoSuperPopup(){
+  openCategoryPopup('c4', 'CONSUMO SUPER', '#aaaa00', 'CONSUMO', openConsumoPopup);
+}
+
+function openConsumoSnackPopup(){
+  openCategoryPopup('c5', 'CONSUMO SNACK', '#ff0000', 'CONSUMO', openConsumoPopup);
+}
+
+function openConsumoManutenzionePopup(){
+  openCategoryPopup('manutenzione', 'CONSUMO MANUTENZIONE', '#8800aa', 'CONSUMO', openConsumoPopup);
+}
+
+/* Popup Storage Categorie */
+function openStorageCaffePopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi elementi non necessari
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = 'STORAGE CAFFÈ';
+  
+  // Svuota la lista ordini
+  orderList.innerHTML = "";
+  
+  // Container per i tasti
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'flex-start';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  container.style.overflowY = 'auto';
+  
+  // Prodotti specifici per STORAGE CAFFÈ
+  const caffeProducts = [
+    'STORAGE CAFFÈ',
+    'STORAGE CAFFÈ DECA'
+  ];
+  
+  caffeProducts.forEach(productName => {
+    createStorageProductRow(container, productName, '#888888');
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openStoragePopup();
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+function openStorageSpinaPopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi elementi non necessari
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = 'STORAGE SPINA';
+  
+  // Svuota la lista ordini
+  orderList.innerHTML = "";
+  
+  // Container per i tasti
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'flex-start';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  container.style.overflowY = 'auto';
+  
+  // Prodotti specifici per STORAGE SPINA
+  const spinaProducts = [
+    'STORAGE PYRASER',
+    'STORAGE ARIA',
+    'STORAGE GUINNESS',
+    'STORAGE GLERA',
+    'STORAGE APEROL',
+    'STORAGE CAMPARI',
+    'STORAGE CYNAR'
+  ];
+  
+  spinaProducts.forEach(productName => {
+    createStorageProductRow(container, productName, '#ff8800');
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openStoragePopup();
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+function openStorageFrigoPopup(){
+  openCategoryPopup('c3', 'STORAGE FRIGO', '#0099ff', 'STORAGE', openStoragePopup);
+}
+
+function openStorageSuperPopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi elementi non necessari
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = 'STORAGE SUPER';
+  
+  // Svuota la lista ordini
+  orderList.innerHTML = "";
+  
+  // Container per i tasti
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'flex-start';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  container.style.overflowY = 'auto';
+  
+  // Ottieni i prodotti originali dal catalogo c4 e modifica quelli richiesti
+  const originalProducts = CATALOG['c4'] || [];
+  const superProducts = [];
+  
+  originalProducts.forEach(product => {
+    if(subcategories[product.name]) {
+      // Se ha sottocategorie, processa quelle
+      subcategories[product.name].forEach(subProduct => {
+        const originalName = `${product.name} ${subProduct.name}`;
+        let finalName = `STORAGE ${originalName}`;
+        
+        // Sostituzioni richieste
+        if(originalName === 'COCKTAILS GIN TONIC') {
+          finalName = 'STORAGE GIN TANQUERAY';
+        } else if(originalName === 'COCKTAILS GIN TONIC H') {
+          finalName = 'STORAGE GIN HENDRICKS';
+        } else if(originalName === 'COCKTAILS RUM COLA') {
+          finalName = 'STORAGE BACARDI';
+        } else if(originalName === 'COCKTAILS VODKA TONIC') {
+          finalName = 'STORAGE SKYYE';
+        } else if(originalName === 'COCKTAILS AMERICANO') {
+          finalName = 'STORAGE MARTINI ROSSO';
+        } else if(originalName === 'COCKTAILS GIN LEMON' || originalName === 'COCKTAILS GIN LEMON H' || 
+                  originalName === 'COCKTAILS JACK COLA' || originalName === 'COCKTAILS JAGERBOMB' || 
+                  originalName === 'COCKTAILS VODKA LEMON') {
+          // Salta questi prodotti (non li aggiungiamo)
+          return;
+        }
+        
+        superProducts.push(finalName);
+      });
+    } else {
+      // Prodotto senza sottocategorie
+      let finalName = `STORAGE ${product.name}`;
+      
+      // Sostituzioni richieste
+      if(product.name === 'GIN TONIC') {
+        finalName = 'STORAGE GIN TANQUERAY';
+      } else if(product.name === 'GIN TONIC H') {
+        finalName = 'STORAGE GIN HENDRICKS';
+      } else if(product.name === 'GIN LEMON' || product.name === 'GIN LEMON H') {
+        // Salta questi prodotti
+        return;
+      }
+      
+      superProducts.push(finalName);
+    }
+  });
+  
+  superProducts.forEach(productName => {
+    createStorageProductRow(container, productName, '#aaaa00');
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openStoragePopup();
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+function openStorageSnackPopup(){
+  currentTarget = {type:null, id:null};
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi elementi non necessari
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = 'STORAGE SNACK';
+  
+  // Svuota la lista ordini
+  orderList.innerHTML = "";
+  
+  // Container per i tasti
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'flex-start';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  container.style.overflowY = 'auto';
+  
+  // Prodotti specifici per STORAGE SNACK
+  const snackProducts = [
+    'STORAGE PROSCIUTTO',
+    'STORAGE FORMAGGIO',
+    'STORAGE PANE TOAST',
+    'STORAGE PIZZETTA',
+    'STORAGE WURSTEL',
+    'STORAGE PANE HOT DOG'
+  ];
+  
+  snackProducts.forEach(productName => {
+    createStorageProductRow(container, productName, '#ff0000');
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    openStoragePopup();
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = () => { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
+  actionsDiv.appendChild(closeBtn);
+  
+  showPopup();
+}
+
+function openStorageManutenzionePopup(){
+  openCategoryPopup('manutenzione', 'STORAGE MANUTENZIONE', '#8800aa', 'STORAGE', openStoragePopup);
+}
+
+
+
+/* Funzione generica per popup categorie */
+function openCategoryPopup(categoryKey, categoryName, categoryColor, prefix, backFunction){
+  currentTarget = {type:null, id:null};
+  
+  
+  // Applica classe spesa-popup per layout 90%
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
+  
+  // Nascondi solo la scritta "ORDINE" mantenendo i tasti azione
+  const columnTitle = document.querySelector('.column-title');
+  if(columnTitle) columnTitle.style.display = 'none';
+  
+  // Nascondi elementi non necessari
+  if(categoriesDiv) categoriesDiv.style.display = 'none';
+  subcatsDiv.innerHTML = "";
+  tempoPad.classList.add('hidden');
+  cassaPad.classList.add('hidden');
+  modifiersDiv.style.display = 'none';
+  
+  // Titolo popup
+  popupTitle.textContent = categoryName;
+  
+  // Svuota la lista ordini (area principale)
+  orderList.innerHTML = "";
+  
+  // Container per i tasti con scroll
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'flex-start';
+  container.style.height = '100%';
+  container.style.gap = '15px';
+  container.style.padding = '20px';
+  container.style.overflowY = 'auto';
+  container.style.boxSizing = 'border-box';
+  
+  // Ottieni i prodotti della categoria con sottocategorie espanse
+  let products = [];
+  if(categoryKey === 'manutenzione') {
+    // Per manutenzione, usa la stessa lista di refill manutenzione
+    const manutenzioneProducts = [
+      'CARTA MANI', 'CARTA IGIENICA', 'SAPONE LIQUIDO',
+      'SACCHI GRANDI', 'SACCHI PICCOLI', 'DET PAVIMENTI',
+      'DET BAGNI', 'DET SUPERFICI', 'DET ACCIAIO',
+      'SPUGNE GRANDI', 'SPUGNE PICCOLE', 'SPUGNE PIATTE',
+      'LAVABICCHIERI B', 'LAVABICCHIERI D'
+    ];
+    products = manutenzioneProducts.map(name => ({name, price: 0}));
+  } else {
+    const catalogProducts = CATALOG[categoryKey] || [];
+    catalogProducts.forEach(product => {
+      // Se il prodotto ha sottocategorie, espandi i suoi prodotti
+      if(subcategories[product.name]){
+        subcategories[product.name].forEach(subProduct => {
+          products.push({ name: `${product.name} ${subProduct.name}`, price: subProduct.price });
+        });
+      } else {
+        // Aggiungi il prodotto base se non ha sottocategorie
+        products.push(product);
+      }
+    });
+  }
+  
+  // Crea righe per ogni sottocategoria/prodotto
+  products.forEach(product => {
+    const productName = `${prefix} ${product.name}`;
+    
+    if(prefix === 'STORAGE') {
+      // Usa la funzione specifica per storage
+      createStorageProductRow(container, productName, categoryColor);
+    } else {
+      // Usa il vecchio sistema per CONSUMO e altri
+      const button = document.createElement('button');
+      
+      // Se è CONSUMO, mostra il contatore
+      let buttonText = productName;
+      if(prefix === 'CONSUMO') {
+        const counter = getConsumoCounter(product.name);
+        buttonText = productName;
+      }
+      
+      button.textContent = buttonText;
+      button.style.width = '75%';
+      button.style.padding = '20px';
+      button.style.fontSize = '18px';
+      button.style.fontWeight = '700';
+      button.style.background = categoryColor;
+      button.style.color = '#fff';
+      button.style.border = 'none';
+      button.style.borderRadius = '8px';
+      button.style.cursor = 'pointer';
+      button.style.transition = 'all 0.2s ease';
+      button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+      button.style.textAlign = 'left';
+      button.style.display = 'flex';
+      button.style.justifyContent = 'space-between';
+      button.style.alignItems = 'center';
+      
+      // Se è CONSUMO, aggiungi la quantità a destra
+      if(prefix === 'CONSUMO') {
+        const quantity = getConsumoQuantity(product.name);
+        const quantitySpan = document.createElement('span');
+        quantitySpan.textContent = quantity;
+        quantitySpan.style.fontSize = '16px';
+        quantitySpan.style.fontWeight = '600';
+        quantitySpan.style.background = 'rgba(255,255,255,0.2)';
+        quantitySpan.style.padding = '4px 8px';
+        quantitySpan.style.borderRadius = '12px';
+        quantitySpan.style.minWidth = '24px';
+        quantitySpan.style.textAlign = 'center';
+        
+        // Svuota il button e aggiungi testo e quantità separatamente
+        button.textContent = '';
+        const textSpan = document.createElement('span');
+        textSpan.textContent = `${prefix} ${product.name}`;
+        button.appendChild(textSpan);
+        button.appendChild(quantitySpan);
+      }
+      
+      // Effetti hover
+      button.onmouseenter = () => {
+        button.style.transform = 'translateY(-2px)';
+        button.style.boxShadow = '0 6px 12px rgba(0,0,0,0.4)';
+      };
+      button.onmouseleave = () => {
+        button.style.transform = 'translateY(0)';
+        button.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+      };
+      
+      // Click handler
+      button.onclick = () => {
+        vibrate(VIBRATION_PATTERNS.tap);
+        if(prefix === 'CONSUMO') {
+          // Per CONSUMO, mostra dettagli o permetti modifica rapida
+          alert(`${prefix} per: ${product.name}\nQuantità: ${getConsumoQuantity(product.name)}\nValore: ${getConsumoValue(product.name)}`);
+        } else {
+          alert(`${prefix} per: ${product.name}`);
+        }
+      };
+      
+      // Tap prolungato per CONSUMO - permette modifica valore
+      if(prefix === 'CONSUMO') {
+        let longPressTimer;
+        
+        button.onmousedown = button.ontouchstart = (e) => {
+          e.preventDefault();
+          longPressTimer = setTimeout(() => {
+            vibrate(VIBRATION_PATTERNS.warning);
+            editConsumoValue(product.name, () => {
+              // Callback per aggiornare l'interfaccia dopo la modifica
+              openCategoryPopup(categoryKey, categoryName, categoryColor, prefix, backFunction);
+            });
+          }, 800); // 800ms per tap prolungato
+        };
+        
+        button.onmouseup = button.onmouseleave = button.ontouchend = button.ontouchcancel = () => {
+          if(longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+        };
+      }
+      
+      container.appendChild(button);
+    }
+  });
+  
+  orderList.appendChild(container);
+  
+  // Bottoni azioni (stile refill con Indietro + Chiudi)
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "Indietro";
+  backBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    backFunction(); // Torna al popup precedente
+  };
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = ()=> { 
+    vibrate(VIBRATION_PATTERNS.tap); 
+    closePopup(); 
+  };
+  
+  actionsDiv.appendChild(backBtn);
   actionsDiv.appendChild(closeBtn);
   
   showPopup();
@@ -2215,9 +4490,9 @@ function renderSpesaList(){
     minusBtn.onclick = (e) => {
       e.stopPropagation();
       vibrate(VIBRATION_PATTERNS.tap);
-      if(refillList[product.name] > 0) {
-        refillList[product.name]--;
-        if(refillList[product.name] === 0) {
+      if(getRefillQuantity(product.name) > 0) {
+        refillList[product.name].quantity--;
+        if(refillList[product.name].quantity <= 0) {
           delete refillList[product.name];
         }
         saveData();
@@ -2341,7 +4616,7 @@ function openCustomTablesPopup(){
   container.style.overflowY = "auto";
   container.style.padding = "10px";
   
-  const customTables = tableNames.filter(n => !n.startsWith("TAV-") && !["BANCO","SALA","SALAF"].includes(n));
+  const customTables = tableNames.filter(n => !n.startsWith("TAV-") && !["STE","SALA","SALAF"].includes(n));
   
   if(customTables.length === 0){
     const empty = document.createElement('div');
@@ -2511,12 +4786,16 @@ function renderActionsForTable(){
           dateLabel: new Date().toLocaleString()
         });
       }
-      items.forEach(it=>{
-        const cat = detectCategory(it.name);
-        if(cat && totals[cat] !== undefined){
-          totals[cat] += (it.price || 0) * (it.qty || 1);
-        }
-      });
+      // Non aggiungere ai totali se il tavolo è STE
+      const isSTETable = tableNames[currentTarget.id] === 'STE';
+      if(!isSTETable){
+        items.forEach(it=>{
+          const cat = detectCategory(it.name);
+          if(cat && totals[cat] !== undefined){
+            totals[cat] += (it.price || 0) * (it.qty || 1);
+          }
+        });
+      }
       // Svuota il tavolo dopo il pagamento
       tableOrders[currentTarget.id] = [];
       renderOrderList();
@@ -2714,9 +4993,22 @@ function openAccontoPopup(){
       selectedIndexes.forEach(idx => {
         const item = items[idx];
         paidItems.push(JSON.parse(JSON.stringify(item)));
-        const cat = detectCategory(item.name);
-        if(cat && totals[cat] !== undefined){
-          totals[cat] += (item.price || 0) * (item.qty || 1);
+        // Non aggiungere ai totali se il tavolo è STE
+        let isSTETable = false;
+        if(currentTarget.type === 'table' && tableNames[currentTarget.id] === 'STE'){
+          isSTETable = true;
+        }
+        if(currentTarget.type === 'saved'){
+          const saved = savedOrders.find(s => s.id === currentTarget.id);
+          if(saved && saved.tableName === 'STE'){
+            isSTETable = true;
+          }
+        }
+        if(!isSTETable){
+          const cat = detectCategory(item.name);
+          if(cat && totals[cat] !== undefined){
+            totals[cat] += (item.price || 0) * (item.qty || 1);
+          }
         }
         
         if(items && items.length > 0){
@@ -2903,9 +5195,12 @@ function addCatalogProduct(name, price){
   
   // Aggiorna refill list quando aggiungi un prodotto delle categorie Refill (c1..c5)
   if(isRefillProductName(name)){
-    if(!refillList[name]) refillList[name] = 0;
-    refillList[name] += 1;
+    if(!refillList[name]) refillList[name] = {quantity: 0, value: 0};
+    refillList[name].quantity += 1;
   }
+  
+  // Incrementa contatore REFILL per tutti i prodotti aggiunti
+  incrementRefillCounter(name);
   
   renderOrderList();
   saveData();
@@ -2923,6 +5218,70 @@ modifiersDiv.addEventListener('click', e=>{
   renderOrderList();
   saveData();
 });
+
+/* delete order item */
+function deleteOrderItem(item) {
+  vibrate(VIBRATION_PATTERNS.warning);
+  
+  // Ottieni gli elementi correnti
+  const items = getEditingItems();
+  if(!items) return;
+  
+  // Trova l'indice dell'elemento da cancellare
+  const itemIndex = items.findIndex(it => 
+    it.name === item.name && 
+    it.qty === item.qty && 
+    it.price === item.price && 
+    it.timestamp === item.timestamp
+  );
+  
+  if(itemIndex === -1) return; // Elemento non trovato
+  
+  // Gestione refill
+  let productName = item.name;
+  modifiersList.forEach(mod => {
+    productName = productName.replace(new RegExp('\\s+' + mod + '$'), '');
+  });
+  
+  // Decrementa contatori refill
+  for(let q = 0; q < (item.qty || 1); q++) {
+    decrementRefillCounter(item.name);
+  }
+  
+  // Rimozione elemento
+  if(accontoMode){
+    accontoMode = false;
+    let isSTETable = false;
+    if(currentTarget.type === 'table' && tableNames[currentTarget.id] === 'STE'){
+      isSTETable = true;
+    }
+    if(currentTarget.type === 'saved'){
+      const saved = savedOrders.find(s => s.id === currentTarget.id);
+      if(saved && saved.tableName === 'STE'){
+        isSTETable = true;
+      }
+    }
+    if(!isSTETable){
+      const cat = detectCategory(item.name);
+      if(cat && totals[cat] !== undefined){
+        totals[cat] += (item.price || 0) * (item.qty || 1);
+      }
+    }
+    items.splice(itemIndex,1);
+    if(items.length === 0 && currentTarget.type === 'saved'){
+      const idx = savedOrders.findIndex(s=>s.id === currentTarget.id);
+      if(idx !== -1) savedOrders.splice(idx,1);
+      closePopup();
+    } else {
+      renderOrderList();
+    }
+    saveData();
+  } else {
+    items.splice(itemIndex,1);
+    renderOrderList();
+    saveData();
+  }
+}
 
 /* render ordine */
 function renderOrderList(){
@@ -2954,7 +5313,18 @@ function renderOrderList(){
     nameCell.textContent = 'Totale Ordine';
     const priceCell = document.createElement('div');
     priceCell.className = "order-price";
-    priceCell.textContent = `€${total.toFixed(2)}`;
+    // Se il tavolo è STE, il totale mostrato è sempre 0
+    let displayTotal = total;
+    if(currentTarget.type === 'table' && tableNames[currentTarget.id] === 'STE'){
+      displayTotal = 0;
+    }
+    if(currentTarget.type === 'saved'){
+      const saved = savedOrders.find(s => s.id === currentTarget.id);
+      if(saved && saved.tableName === 'STE'){
+        displayTotal = 0;
+      }
+    }
+    priceCell.textContent = `€${displayTotal.toFixed(2)}`;
     totDiv.appendChild(nameCell);
     totDiv.appendChild(priceCell);
     orderList.appendChild(totDiv);
@@ -3010,60 +5380,62 @@ function renderOrderList(){
     row.appendChild(nameCell);
     row.appendChild(priceCell);
 
-    // Long press per dividere TEMPO
+    // Gestione eventi per tutti gli elementi
     let pressTimer;
-    if(it.name === "TEMPO"){
-      row.ontouchstart = row.onmousedown = (e)=> {
+    let longPressTriggered = false;
+    let touchHandled = false;
+    
+    // Touch events per tutti gli elementi
+    row.ontouchstart = (e)=> {
+      touchHandled = false;
+      longPressTriggered = false;
+      
+      if(it.name === "TEMPO"){
         pressTimer = setTimeout(()=> {
+          longPressTriggered = true;
+          touchHandled = true;
           openDivideTempoPopup(i, it);
         }, 800);
-      };
-      row.ontouchend = row.onmouseup = row.ontouchcancel = ()=> {
-        clearTimeout(pressTimer);
-      };
-    }
+      }
+    };
     
-    row.onclick = ()=> {
-      vibrate(VIBRATION_PATTERNS.warning);
-      
-      // Rimuovi dal refillList se è un prodotto REFILL
-      const item = items[i];
-      let productName = item.name;
-      
-      // Rimuovi modificatori dal nome del prodotto
-      modifiersList.forEach(mod => {
-        productName = productName.replace(new RegExp('\\s+' + mod + '$'), '');
-      });
-      
-      const isRefill = isRefillProductName(productName);
-      if(isRefill && refillList[productName]){
-        refillList[productName] -= (item.qty || 1);
-        if(refillList[productName] <= 0){
-          delete refillList[productName];
-        }
-        console.log('Removed from refillList:', productName, '=', refillList[productName] || 0);
+    row.ontouchend = (e)=> {
+      if(it.name === "TEMPO"){
+        clearTimeout(pressTimer);
       }
       
-      if(accontoMode){
-        accontoMode = false;
-        const cat = detectCategory(item.name);
-        if(cat && totals[cat] !== undefined){
-          totals[cat] += (item.price || 0) * (item.qty || 1);
-        }
-        items.splice(i,1);
-        if(items.length === 0 && currentTarget.type === 'saved'){
-          const idx = savedOrders.findIndex(s=>s.id === currentTarget.id);
-          if(idx !== -1) savedOrders.splice(idx,1);
-          closePopup();
-        } else {
-          renderOrderList();
-        }
-        saveData();
-      } else {
-        items.splice(i,1);
-        renderOrderList();
-        saveData();
+      // Se non è stato un long press e non è già stato gestito, esegui la cancellazione
+      if(!longPressTriggered && !touchHandled){
+        touchHandled = true;
+        e.preventDefault(); // Previeni il click successivo
+        setTimeout(() => {
+          deleteOrderItem(it);
+        }, 10);
       }
+    };
+    
+    row.ontouchcancel = (e)=> {
+      if(it.name === "TEMPO"){
+        clearTimeout(pressTimer);
+      }
+      touchHandled = false;
+      longPressTriggered = false;
+    };
+    
+    row.ontouchmove = (e)=> {
+      if(it.name === "TEMPO"){
+        clearTimeout(pressTimer);
+      }
+    };
+    
+    // Click event come fallback per mouse
+    row.onclick = (e)=> {
+      // Se il touch è già stato gestito, ignora il click
+      if(touchHandled){
+        touchHandled = false;
+        return;
+      }
+      deleteOrderItem(it);
     };
 
     orderList.appendChild(row);
@@ -3081,15 +5453,17 @@ function openDivideTempoPopup(itemIndex, item){
     true,
     (parts) => {
       if(parts && parts > 1){
-        const pricePerPart = item.price / parts;
-        // Rimuovi il TEMPO originale
+        const totalCents = Math.round((item.price || 0) * 100);
+        const baseCents = Math.floor(totalCents / parts);
+        const remainder = totalCents - baseCents * parts;
+
         items.splice(itemIndex, 1);
-        // Aggiungi i nuovi TEMPO divisi
         for(let i = 0; i < parts; i++){
+          const cents = baseCents + (i < remainder ? 1 : 0);
           items.push({
             name: "TEMPO",
             qty: 1,
-            price: pricePerPart,
+            price: cents / 100,
             timestamp: Date.now()
           });
         }
@@ -3219,12 +5593,16 @@ function paySavedOrder(savedId){
       dateLabel: new Date().toLocaleString()
     });
   }
-  saved.items.forEach(it=>{
-    const cat = detectCategory(it.name);
-    if(cat && totals[cat] !== undefined){
-      totals[cat] += (it.price || 0) * (it.qty || 1);
-    }
-  });
+  // Non aggiungere ai totali se l'ordine salvato è per STE
+  const isSTEOrder = saved.tableName === 'STE';
+  if(!isSTEOrder){
+    saved.items.forEach(it=>{
+      const cat = detectCategory(it.name);
+      if(cat && totals[cat] !== undefined){
+        totals[cat] += (it.price || 0) * (it.qty || 1);
+      }
+    });
+  }
   savedOrders.splice(idx,1);
   renderSavedButtons();
   closePopup();
@@ -3416,8 +5794,10 @@ function openEvasi(){
       return;
     }
     showConfirm('Confermi il reset degli ordini evasi?', ()=>{
+      console.log('Reset Evasi - Prima del reset:', evasiOrders.length, 'elementi');
       exportEvasiToCSV();
       evasiOrders = [];
+      console.log('Reset Evasi - Dopo il reset:', evasiOrders.length, 'elementi');
       saveData();
       openEvasi();
     }, 'Reset Evasi');
@@ -3489,28 +5869,19 @@ function applyBackground(){
 
 /* Settings */
 function openSettings(){
-  console.log('🔧 openSettings() chiamata');
   currentTarget = {type:null, id:null};
-  // Layout verticale - non serve nascondere colonna
+  
+  // Setup popup standard come SPESA e REFILL
+  const popupContent = document.querySelector('.popup-content');
+  popupContent.classList.add('spesa-popup');
   if(categoriesDiv) categoriesDiv.style.display = 'none';
   subcatsDiv.innerHTML = "";
   tempoPad.classList.add('hidden');
   cassaPad.classList.add('hidden');
   modifiersDiv.style.display = 'none';
+  
+  popupTitle.textContent = "IMPOSTAZIONI";
   orderList.innerHTML = "";
-
-  // Aggiungi classe fullscreen al popup e popup-content
-  popup.classList.add('fullscreen-popup');
-  const popupContent = document.querySelector('.popup-content');
-  if(popupContent) popupContent.classList.add('fullscreen');
-
-  const mainTitle = document.createElement('div');
-  mainTitle.textContent = "Impostazioni";
-  mainTitle.style.fontWeight = "700";
-  mainTitle.style.fontSize = "24px";
-  mainTitle.style.marginBottom = "20px";
-  mainTitle.style.textAlign = "center";
-  orderList.appendChild(mainTitle);
 
   // Menu opzioni
   const menuOptions = [
@@ -3542,13 +5913,13 @@ function openSettings(){
     orderList.appendChild(box);
   });
 
+  // Bottoni azioni
   actionsDiv.innerHTML = "";
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
-  closeBtn.onclick = closePopup;
+  closeBtn.onclick = ()=> { vibrate(VIBRATION_PATTERNS.tap); closePopup(); };
   actionsDiv.appendChild(closeBtn);
 
-  popupTitle.textContent = "Settings";
   showPopup();
 }
 
@@ -3751,7 +6122,7 @@ function applyFont(){
       padding: ${fontSettings.utility.padding}px !important;
     }
     
-    /* Bottoni tavoli (TAV-1, TAV-2, BANCO, SALA, SALAF, +) */
+    /* Bottoni tavoli (TAV-1, TAV-2, STE, SALA, SALAF, +) */
     button.table-btn,
     .table-btn {
       font-family: ${fontSettings.tavoli.font} !important;
@@ -3814,7 +6185,6 @@ function applyFont(){
       font-size: ${fontSettings.conferma.size}px !important;
     }
     
-    
     /* Titoli popup */
     .popup-header h3 {
       font-size: ${20 * scaleFactor}px !important;
@@ -3843,7 +6213,7 @@ function applyFont(){
     .utility-btn { 
       color: ${fontSettings.utility?.color || '#ffffff'} !important; 
     }
-    /* Bottoni tavoli (TAV-1, TAV-2, ecc., BANCO, SALA, SALAF, +) */
+    /* Bottoni tavoli (TAV-1, TAV-2, ecc., STE, SALA, SALAF, +) */
     button.table-btn,
     .table-btn { 
       color: ${fontSettings.tavoli?.color || '#ffffff'} !important; 
@@ -3965,7 +6335,6 @@ function openFontSizeSettings(){
 
 /* Customize Font Settings */
 function openCustomizeFontSettings(){
-  console.log('🎨 openCustomizeFontSettings() chiamata');
   orderList.innerHTML = "";
   
   const title = document.createElement('div');
@@ -3976,17 +6345,109 @@ function openCustomizeFontSettings(){
   title.style.textAlign = "center";
   orderList.appendChild(title);
 
+  // Sezione controlli globali
+  const globalSection = document.createElement('div');
+  globalSection.className = 'customize-section customize-global';
+  globalSection.style.marginBottom = "20px";
+  globalSection.style.padding = "15px";
+  globalSection.style.background = "#1a1a1a";
+  globalSection.style.borderRadius = "10px";
+  globalSection.style.border = "3px solid #ff6600";
+  
+  const globalHeader = document.createElement('div');
+  globalHeader.className = 'customize-header customize-header-global';
+  globalHeader.textContent = "🌟 APPLICA A TUTTI I TIPI DI TASTI";
+  globalHeader.style.fontWeight = "700";
+  globalHeader.style.fontSize = "18px";
+  globalHeader.style.marginBottom = "8px";
+  globalHeader.style.color = "#ff6600";
+  globalHeader.style.textAlign = "center";
+  globalSection.appendChild(globalHeader);
+  
+  const globalDesc = document.createElement('div');
+  globalDesc.className = 'customize-desc customize-desc-global';
+  globalDesc.textContent = "Cambia font, dimensione, padding e colore per tutte le categorie contemporaneamente";
+  globalDesc.style.fontSize = "13px";
+  globalDesc.style.color = "#ccc";
+  globalDesc.style.marginBottom = "12px";
+  globalDesc.style.textAlign = "center";
+  globalSection.appendChild(globalDesc);
+  
+  const globalButtonsDiv = document.createElement('div');
+  globalButtonsDiv.className = 'customize-buttons customize-buttons-global';
+  globalButtonsDiv.style.display = "grid";
+  globalButtonsDiv.style.gridTemplateColumns = "repeat(4, 1fr)";
+  globalButtonsDiv.style.gap = "8px";
+  
+  // Font globale
+  const globalFontBtn = document.createElement('button');
+  globalFontBtn.className = 'customize-btn customize-font-btn customize-font-global';
+  globalFontBtn.textContent = "Font Tutti";
+  globalFontBtn.style.padding = "12px 6px";
+  globalFontBtn.style.fontSize = "14px";
+  globalFontBtn.style.background = "#ff6600";
+  globalFontBtn.style.color = "#fff";
+  globalFontBtn.style.fontWeight = "700";
+  globalFontBtn.onclick = ()=> openSelectFontForAll();
+  
+  // Dimensione globale
+  const globalSizeBtn = document.createElement('button');
+  globalSizeBtn.className = 'customize-btn customize-size-btn customize-size-global';
+  globalSizeBtn.textContent = "Size Tutti";
+  globalSizeBtn.style.padding = "12px 6px";
+  globalSizeBtn.style.fontSize = "14px";
+  globalSizeBtn.style.background = "#ff6600";
+  globalSizeBtn.style.color = "#fff";
+  globalSizeBtn.style.fontWeight = "700";
+  globalSizeBtn.onclick = ()=> openSelectSizeForAll();
+  
+  // Padding globale
+  const globalPaddingBtn = document.createElement('button');
+  globalPaddingBtn.className = 'customize-btn customize-padding-btn customize-padding-global';
+  globalPaddingBtn.textContent = "Pad Tutti";
+  globalPaddingBtn.style.padding = "12px 6px";
+  globalPaddingBtn.style.fontSize = "14px";
+  globalPaddingBtn.style.background = "#ff6600";
+  globalPaddingBtn.style.color = "#fff";
+  globalPaddingBtn.style.fontWeight = "700";
+  globalPaddingBtn.onclick = ()=> openSelectPaddingForAll();
+  
+  // Colore globale
+  const globalColorBtn = document.createElement('button');
+  globalColorBtn.className = 'customize-btn customize-color-btn customize-color-global';
+  globalColorBtn.textContent = "Color Tutti";
+  globalColorBtn.style.padding = "12px 6px";
+  globalColorBtn.style.fontSize = "14px";
+  globalColorBtn.style.background = "#ff6600";
+  globalColorBtn.style.color = "#fff";
+  globalColorBtn.style.fontWeight = "700";
+  globalColorBtn.onclick = ()=> openSelectColorForAll();
+  
+  globalButtonsDiv.appendChild(globalFontBtn);
+  globalButtonsDiv.appendChild(globalSizeBtn);
+  globalButtonsDiv.appendChild(globalPaddingBtn);
+  globalButtonsDiv.appendChild(globalColorBtn);
+  globalSection.appendChild(globalButtonsDiv);
+  
+  orderList.appendChild(globalSection);
+
+  // Separatore
+  const separator = document.createElement('div');
+  separator.style.height = "2px";
+  separator.style.background = "linear-gradient(90deg, transparent, #444, transparent)";
+  separator.style.margin = "15px 0";
+  orderList.appendChild(separator);
+
   const categories = [
     {key: "utility", label: "🔧 Bottoni Utility", desc: "TOTALI, STORICO, EVASI, SETTINGS"},
-    {key: "tavoli", label: "🎯 Bottoni Tavoli", desc: "TAV-1, TAV-2, BANCO, SALA, SALAF"},
+    {key: "tavoli", label: "🎯 Bottoni Tavoli", desc: "TAV-1, TAV-2, STE, SALA, SALAF"},
     {key: "ordiniSalvati", label: "💾 Ordini Salvati", desc: "Bottoni in alto a sinistra"},
     {key: "categorie", label: "📋 Categorie", desc: "CAFFÈ, SPINA, FRIGO, SUPER, SNACK"},
     {key: "sottocategorie", label: "📝 Sottocategorie", desc: "GRAPPA, SAMBUCA, APEROL, ecc."},
     {key: "modificatori", label: "🏷️ Modificatori", desc: "SR, M, K, S, GH"},
     {key: "azioni", label: "⚡ Azioni", desc: "PAGATO, ACCONTO, DONE, CHIUDI"},
     {key: "ordini", label: "📄 Lista Ordini", desc: "Prodotti e prezzi nell'ordine"},
-    {key: "conferma", label: "✅ Popup Conferma", desc: "Dialoghi di conferma"},
-    {key: "refill", label: "🔄 REFILL", desc: "Bottoni nel popup REFILL"}
+    {key: "conferma", label: "✅ Popup Conferma", desc: "Dialoghi di conferma"}
   ];
 
   categories.forEach(cat => {
@@ -4128,7 +6589,7 @@ function openSelectFont(category, label){
       fontSettings[category].font = font.value;
       applyFont();
       saveData();
-        openSelectFont(category, label);
+      openSelectFont(category, label);
     };
     
     box.onmouseenter = ()=> {
@@ -4183,7 +6644,7 @@ function openSelectSize(category, label){
       fontSettings[category].size = size;
       applyFont();
       saveData();
-        openSelectSize(category, label);
+      openSelectSize(category, label);
     };
     
     box.onmouseenter = ()=> {
@@ -4249,7 +6710,7 @@ function openSelectPadding(category, label){
       fontSettings[category].padding = padding;
       applyFont();
       saveData();
-        openSelectPadding(category, label);
+      openSelectPadding(category, label);
     };
     
     box.onmouseenter = ()=> {
@@ -4926,13 +7387,22 @@ function openStorico(){
   modifiersDiv.style.display = 'none';
   orderList.innerHTML = "";
 
-  if(!storico || storico.length === 0){
+  // Assicura che storico sia un array valido
+  if(!storico || !Array.isArray(storico)) {
+    storico = [];
+  }
+
+  console.log('Apertura storico - elementi presenti:', storico.length);
+
+  if(storico.length === 0){
     const empty = document.createElement('div');
     empty.textContent = "Nessuno storico disponibile";
     orderList.appendChild(empty);
   } else {
     // mostra dal più recente
-    storico.slice().reverse().forEach(entry=>{
+    storico.slice().reverse().forEach((entry, index)=>{
+      console.log(`Creazione elemento storico ${index}:`, entry.id, entry.dateLabel);
+      
       const box = document.createElement('div');
       box.style.border = "1px solid #444";
       box.style.borderRadius = "6px";
@@ -4970,10 +7440,27 @@ function openStorico(){
       del.textContent = "Elimina";
       del.onclick = ()=> {
         showConfirm('Confermi l\'eliminazione di questo storico?', ()=>{
+          console.log('Tentativo eliminazione storico con ID:', entry.id);
+          console.log('Storico attuale:', storico.length, 'elementi');
+          
           const idx = storico.findIndex(s=>s.id === entry.id);
-          if(idx !== -1) storico.splice(idx,1);
-          saveData();
-          openStorico();
+          console.log('Indice trovato:', idx);
+          
+          if(idx !== -1) {
+            console.log('Eliminazione elemento in posizione:', idx);
+            storico.splice(idx, 1);
+            console.log('Storico dopo eliminazione:', storico.length, 'elementi');
+            
+            saveData();
+            
+            // Forza il refresh della vista
+            setTimeout(() => {
+              openStorico();
+            }, 100);
+          } else {
+            console.error('Elemento non trovato nello storico!');
+            alert('Errore: elemento non trovato nello storico');
+          }
         }, 'Elimina Storico');
       };
 
@@ -5087,6 +7574,7 @@ function exportTotalsToCSV() {
     console.error("Errore exportTotalsToCSV:", e);
   }
 }
+
 
 /* Funzione per scaricare CSV in locale */
 function downloadCSV(csvContent, tipo) {
