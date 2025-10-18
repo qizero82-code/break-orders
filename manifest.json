@@ -1,15 +1,16 @@
 {
   "name": "Break Orders",
-  "short_name": "Break Orders",
+  "short_name": "BreakOrders",
   "description": "Sistema di gestione ordini per Break Billiard Club",
-  "id": "./",
-  "scope": "./",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
+  "scope": "./",
   "prefer_related_applications": false,
+  "categories": ["business", "productivity"],
+  "lang": "it",
   "icons": [
     {
       "src": "icon-192.png",

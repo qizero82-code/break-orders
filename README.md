@@ -1,41 +1,103 @@
 # Break Orders PWA
 
-Applicazione PWA per la gestione ordini del Break Billiard Club.
+Sistema di gestione ordini per Break Billiard Club - Progressive Web App
 
-## Struttura principale
-- `index.html`: app principale (UI, logica, registrazione Service Worker).
-- `manifest.json`: Web App Manifest (icone, start_url, scope, tema).
-- `service-worker.js`: caching/offline.
-- `icon-192.png`, `icon-512.png`: icone PWA.
+## 📱 Caratteristiche
 
-## Requisiti PWA (già configurati)
-- Manifest linkato in `index.html` con `<link rel="manifest" href="manifest.json" />`.
-- Registrazione Service Worker in `index.html` (al load).
-- `manifest.json` con `id`, `scope`, `start_url` relativi (compatibili con GitHub Pages project site).
+- **Interfaccia touch-friendly**: Ottimizzata per tablet e dispositivi mobili
+- **Gestione ordini in tempo reale**: Sincronizzazione con Firebase
+- **Modalità offline**: Funziona anche senza connessione internet
+- **Export Excel**: Esportazione dati in formato Excel
+- **PWA**: Installabile come app nativa su Android/iOS
 
-## Pubblicazione su GitHub
-1. Crea il repository su GitHub: `qizero82-code/break-orders`.
-2. Aggiungi questi file alla root del repository e fai push su `main`.
-3. Abilita GitHub Pages:
-   - Settings → Pages → Source: `Deploy from a branch`.
-   - Branch: `main` e Directory: `/ (root)`.
-4. Attendi la pubblicazione. L'app sarà disponibile a:
-   - `https://qizero82-code.github.io/break-orders/`
+## 🚀 Deploy su GitHub Pages
 
-Nota: Il `manifest.json` usa percorsi relativi (`./`), quindi non serve modificare URL se il sito è `.../break-orders/`.
+### 1. Carica i file su GitHub
+```bash
+git add .
+git commit -m "PWA ready for deployment"
+git push origin main
+```
 
-## Generare APK con PWABuilder
-1. Vai su https://www.pwabuilder.com/.
-2. Inserisci l’URL pubblico della PWA (es. `https://qizero82-code.github.io/break-orders/`).
-3. Verifica i checks (Manifest/Service Worker dovrebbero risultare OK).
-4. Seleziona “Package for Android”.
-5. Configura i parametri (nome app, packageId, icone). PWABuilder può generare e firmare l’APK/AAB:
-   - Puoi scaricare il pacchetto firmato oppure far generare un pacchetto non firmato e firmarlo più tardi.
-6. Scarica l’APK/AAB risultante.
+### 2. Abilita GitHub Pages
+1. Vai nelle **Settings** del repository `break-orders`
+2. Scorri fino a **Pages**
+3. Seleziona **Source**: Deploy from a branch
+4. Seleziona **Branch**: `main` e **Directory**: `/ (root)`
+5. Clicca **Save**
 
-## Consigli
-- Dopo ogni modifica, esegui hard refresh (Ctrl+F5) o incrementa i nomi cache nel `service-worker.js` per forzare l’update.
-- Controlla la console per `Service Worker` registrato e eventuali messaggi di aggiornamento.
+L'app sarà disponibile a: `https://qizero82-code.github.io/break-orders/`
 
-## Licenza
-Specifica qui la licenza, se necessario.
+## 📦 Generare APK con PWABuilder
+
+### 1. Vai su PWABuilder
+- Visita: https://www.pwabuilder.com/
+- Inserisci l'URL: `https://qizero82-code.github.io/break-orders/`
+
+### 2. Verifica PWA
+PWABuilder controllerà automaticamente:
+- ✅ **Manifest**: Configurazione PWA
+- ✅ **Service Worker**: Funzionalità offline
+- ✅ **HTTPS**: Connessione sicura
+- ✅ **Icons**: Icone app (192x192, 512x512)
+
+### 3. Genera APK Android
+1. Clicca **"Build My PWA"**
+2. Seleziona **"Android Package"**
+3. Configura i parametri:
+   - **Package ID**: `com.breakclub.orders`
+   - **App Name**: `Break Orders`
+   - **Version**: `1.0.0`
+4. Clicca **"Generate Package"**
+5. Scarica l'APK generato
+
+## 📁 File Essenziali (Inclusi)
+
+✅ **File ottimizzati per PWABuilder**:
+- `index.html` - App principale (328KB)
+- `manifest.json` - Configurazione PWA ottimizzata
+- `service-worker.js` - Cache e funzionalità offline
+- `icon-192.png` - Icona 192x192 (26KB)
+- `icon-512.png` - Icona 512x512 (84KB)
+
+## 🔧 Configurazione Firebase
+
+Per il pieno funzionamento dell'app:
+1. Crea un progetto Firebase
+2. Abilita **Realtime Database**
+3. Configura le regole di sicurezza
+4. Aggiorna le credenziali Firebase nel codice
+
+## 💻 Tecnologie
+
+- **Frontend**: HTML5, CSS3, JavaScript ES6+
+- **Database**: Firebase Realtime Database
+- **PWA**: Service Worker, Web App Manifest
+- **Offline**: Cache API, Background Sync
+- **Export**: SheetJS (XLSX)
+
+## 📱 Installazione come App
+
+### Android:
+1. Apri l'app nel browser Chrome
+2. Tocca **"Aggiungi alla schermata Home"**
+3. L'app verrà installata come app nativa
+
+### iOS:
+1. Apri l'app in Safari
+2. Tocca il pulsante **"Condividi"**
+3. Seleziona **"Aggiungi alla schermata Home"**
+
+## 🔄 Aggiornamenti
+
+Dopo ogni modifica:
+- Incrementa il numero di versione in `service-worker.js` (attualmente v10)
+- Esegui hard refresh (Ctrl+F5) per forzare l'aggiornamento
+
+## 📄 Licenza
+
+Tutti i diritti riservati - Break Billiard Club
+
+---
+
+**✨ La tua PWA è pronta per il deployment!**
