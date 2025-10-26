@@ -1070,25 +1070,21 @@ function downloadUpdatedExcel(workbook, filename = 'database.xlsx') {
     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
     
-    // Genera timestamp per nome univoco che evita duplicati
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const uniqueFilename = `database_${timestamp}.xlsx`;
-    
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = uniqueFilename;
+    a.download = 'database.xlsx';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    console.log(`📥 File ${uniqueFilename} scaricato con successo`);
-    console.log(`⚠️  IMPORTANTE: Sposta manualmente il file da Download a PWAbuilder e rinominalo in 'database.xlsx'`);
+    console.log(`📥 File database.xlsx scaricato con successo`);
+    console.log(`⚠️  IMPORTANTE: Sposta manualmente il file da Download a PWAbuilder sostituendo quello esistente`);
     
     // Mostra istruzioni all'utente
     setTimeout(() => {
-      alert(`✅ File Excel aggiornato!\n\n📁 Salvato come: ${uniqueFilename}\n\n⚠️ Per completare:\n1. Vai in Download\n2. Sposta il file in PWAbuilder\n3. Rinominalo in 'database.xlsx'`);
+      alert(`✅ File Excel aggiornato!\n\n📁 Salvato come: database.xlsx\n\n⚠️ Per completare:\n1. Vai in Download\n2. Sposta il file in PWAbuilder\n3. Sostituisci il database.xlsx esistente`);
     }, 500);
     
   } catch (error) {
@@ -1418,34 +1414,16 @@ function executeRefillReset() {
         }
       }
       
-      // Leggi range I88:CB88 per Battocchio
-      const battocchioNames = [];
-      console.log('RESET REFILL: Leggendo riga 88 per Battocchio...');
-      for (let col = 9; col <= 80; col++) {
-        const cellRef = getColumnLetter(col) + '88';
-        const cell = firstSheet[cellRef];
-        
-        let cellValue = null;
-        if (cell) {
-          cellValue = cell.w || cell.v;
-          if (cellValue && cellValue.toString().trim() !== '') {
-            const trimmedValue = cellValue.toString().trim();
-            battocchioNames.push(trimmedValue);
-            console.log(`RESET REFILL: Aggiunto a Battocchio da ${cellRef}: "${trimmedValue}"`);
-          }
-        }
-      }
       
       // Mostra risultati del metodo diretto
       console.log('RESET REFILL: Risultati metodo diretto:', {
         amazon: amazonNames.length,
         poggiana: poggianaNames.length, 
-        prix: prixNames.length,
-        battocchio: battocchioNames.length
+        prix: prixNames.length
       });
       
       // Se non abbiamo trovato nomi con il metodo diretto, prova con JSON
-      if (amazonNames.length === 0 && poggianaNames.length === 0 && prixNames.length === 0 && battocchioNames.length === 0) {
+      if (amazonNames.length === 0 && poggianaNames.length === 0 && prixNames.length === 0) {
         console.log('RESET REFILL: Metodo diretto fallito, provo con JSON...');
         try {
           const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, raw: false});
@@ -1480,15 +1458,6 @@ function executeRefillReset() {
             });
           }
           
-          // Riga 87 (indice 86) per Battocchio
-          if (jsonData[86]) {
-            jsonData[86].forEach((cell, index) => {
-              if (cell && cell.toString().trim() !== '' && index >= 8) {
-                battocchioNames.push(cell.toString().trim());
-                console.log(`RESET REFILL: Battocchio da JSON colonna ${index + 1}: "${cell}"`);
-              }
-            });
-          }
           
         } catch (err) {
           console.error('RESET REFILL: Errore lettura JSON:', err);
@@ -1519,18 +1488,10 @@ function executeRefillReset() {
         });
       });
       
-      battocchioNames.forEach(name => {
-        battocchioList.push({
-          name: name,
-          timestamp: timestamp
-        });
-      });
-      
       console.log('RESET REFILL: Liste carrello aggiornate:', {
         amazon: `${amazonNames.length} nomi aggiunti (totale: ${amazonList.length})`,
         poggiana: `${poggianaNames.length} nomi aggiunti (totale: ${poggianaList.length})`,
-        prix: `${prixNames.length} nomi aggiunti (totale: ${prixList.length})`,
-        battocchio: `${battocchioNames.length} nomi aggiunti (totale: ${battocchioList.length})`
+        prix: `${prixNames.length} nomi aggiunti (totale: ${prixList.length})`
       });
       
       // Mostra sempre lo stato finale delle liste
@@ -1726,6 +1687,16 @@ function saveData(){
       battocchio: (battocchioList || []).length
     });
     addIfHasData('tableNames', tableNames);
+    // Forza sempre il salvataggio del CATALOG per sincronizzazione categorie
+    // Filtra le categorie null/undefined ma mantieni quelle vuote []
+    const cleanCatalog = {};
+    Object.keys(CATALOG || {}).forEach(key => {
+      if (CATALOG[key] !== null && CATALOG[key] !== undefined) {
+        cleanCatalog[key] = CATALOG[key];
+      }
+    });
+    firebaseData['CATALOG'] = cleanCatalog;
+    console.log('SaveData - Salvando CATALOG con', Object.keys(cleanCatalog).length, 'categorie');
     // Metadati server per ordinamento/risoluzione conflitti lato client
     firebaseData._meta = { lastUpdated: firebase.database.ServerValue.TIMESTAMP };
     
@@ -1734,7 +1705,7 @@ function saveData(){
       tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
       amazonList, poggianaList, prixList, battocchioList,
       currentBackground, currentFont, currentFontSize, fontSettings, 
-      modifiersList, subcategories
+      modifiersList, subcategories, CATALOG
     };
     
     // Salva sempre in localStorage come backup
@@ -1744,7 +1715,7 @@ function saveData(){
     if (firebaseEnabled && database && !isUpdatingFromFirebase) {
       // update() evita di sovrascrivere le chiavi non incluse nel payload
       database.ref('breakOrders').update(firebaseData).catch(err => {
-        console.error("Errore salvataggio Firebase:", err);
+        console.error("❌ Errore salvataggio Firebase:", err);
       });
     }
   }catch(e){ 
@@ -1889,6 +1860,15 @@ function applyParsedData(parsed, fromFirebase = false){
   // Sincronizza tableNames da Firebase
   if(parsed.tableNames) tableNames.splice(0, tableNames.length, ...parsed.tableNames);
   
+  // Sincronizza CATALOG SEMPRE (sia da Firebase che da localStorage)
+  if(parsed.CATALOG) {
+    // Merge del CATALOG mantenendo le categorie esistenti e aggiungendo quelle nuove
+    Object.keys(parsed.CATALOG).forEach(key => {
+      CATALOG[key] = parsed.CATALOG[key];
+    });
+    console.log("📥 CATALOG sincronizzato da", fromFirebase ? "Firebase" : "localStorage");
+  }
+  
   // Carica impostazioni SOLO da localStorage, NON da Firebase
   if(!fromFirebase){
     currentBackground = parsed.currentBackground || currentBackground;
@@ -1927,16 +1907,17 @@ function setupFirebaseSync(){
     const data = snapshot.val();
     if(data){
       console.log("📥 Ricevuti dati da Firebase");
-      console.log("📥 LISTE DEBUG: Dati ricevuti da Firebase:", {
-        amazonList: (data.amazonList || []).length,
-        poggianaList: (data.poggianaList || []).length,
-        prixList: (data.prixList || []).length,
-        battocchioList: (data.battocchioList || []).length
-      });
       isUpdatingFromFirebase = true;
       applyParsedData(data, true); // true = da Firebase, non caricare impostazioni
       renderTables();
       renderSavedButtons();
+      
+      // Se il menu categorie è aperto, aggiornalo
+      if(popupTitle.textContent === "Gestisci Categorie e Prodotti") {
+        console.log("🔄 CATEGORIA: Aggiornando UI categorie dopo sync Firebase");
+        openCategorySettings();
+      }
+      
       isUpdatingFromFirebase = false;
     }
   }, (error) => {
@@ -2012,7 +1993,7 @@ function forceSyncShoppingLists() {
 }
 
 /* catalogo */
-const CATALOG = {
+let CATALOG = {
   c1: [ {name:"CAFFÈ LISCIO", price:1.00}, {name:"CAFFÈ DECA", price:1.00}, {name:"CAFFÈ CORRETTO", price:1.50} ],
   c2: [ {name:"PYRASER 0,3", price:3.50}, {name:"PYRASER 0,5", price:5.50}, {name:"ARIA 0,3", price:3.50}, {name:"ARIA 0,5", price:5.50}, {name:"GUINNESS 0,25", price:3.50}, {name:"GUINNESS 0,5", price:5.50}, {name:"SPRITZ", price:2.50} ],
   c3: [ {name:"ACQUA NATURALE", price:1.00}, {name:"ACQUA FRIZZANTE", price:1.00}, {name:"COCA COLA", price:2.50}, {name:"COCA ZERO", price:2.50}, {name:"TÈ LIMONE", price:2.50}, {name:"TÈ PESCA", price:2.50}, {name:"FANTA", price:2.50}, {name:"LEMON SODA", price:2.50}, {name:"RED BULL", price:2.50} ],
@@ -2560,44 +2541,6 @@ function openRefillSimple(){
               }
               console.log('RESET REFILL: Prix nomi trovati:', prixNames.length);
               
-              // Riga 88 (indice 87) per Battocchio con valori dalla riga 81 (indice 80)
-              const battocchioNames = [];
-              
-              // Metodo alternativo: leggi direttamente dalle celle per gestire le formule
-              console.log('RESET REFILL: Leggendo Battocchio direttamente dalle celle (percorso principale)...');
-              for (let col = 8; col < 100; col++) { // da colonna I (8) in poi
-                const colLetter = String.fromCharCode(65 + col); // A=65, B=66, etc.
-                const cellRef88 = `${colLetter}88`;
-                const cellRef81 = `${colLetter}81`;
-                
-                const cell88 = firstSheet[cellRef88];
-                const cell81 = firstSheet[cellRef81];
-                
-                if (cell88 && cell88.v && cell88.v.toString().trim() !== '') {
-                  const name = cell88.v.toString().trim();
-                  const value = cell81 && cell81.v ? cell81.v.toString() : '0';
-                  const nameWithValue = `${name} (${value})`;
-                  battocchioNames.push(nameWithValue);
-                  console.log(`RESET REFILL: Battocchio da cella ${cellRef88}: "${name}" valore da ${cellRef81}: "${value}"`);
-                }
-              }
-              
-              // Fallback: usa il metodo JSON se il metodo diretto non trova nulla
-              if (battocchioNames.length === 0 && jsonData[87]) {
-                console.log('RESET REFILL: Fallback - Riga 88 da JSON:', jsonData[87]);
-                jsonData[87].forEach((cell, index) => {
-                  if (cell && cell.toString().trim() !== '' && index >= 8) {
-                    const name = cell.toString().trim();
-                    const value = jsonData[80] && jsonData[80][index] ? jsonData[80][index].toString() : '0';
-                    const nameWithValue = `${name} (${value})`;
-                    battocchioNames.push(nameWithValue);
-                    console.log(`RESET REFILL: Battocchio da JSON colonna ${index + 1}: "${name}" valore: "${value}"`);
-                  }
-                });
-              }
-              
-              console.log('RESET REFILL: Battocchio nomi trovati:', battocchioNames.length);
-              
               // Aggiungi i nomi alle rispettive liste
               const timestamp = new Date().toISOString();
               
@@ -2622,18 +2565,11 @@ function openRefillSimple(){
                 });
               });
               
-              battocchioNames.forEach(name => {
-                battocchioList.push({
-                  name: name,
-                  timestamp: timestamp
-                });
-              });
               
               console.log('RESET REFILL: Liste carrello aggiornate:', {
                 amazon: `${amazonNames.length} nomi aggiunti (totale: ${amazonList.length})`,
                 poggiana: `${poggianaNames.length} nomi aggiunti (totale: ${poggianaList.length})`,
-                prix: `${prixNames.length} nomi aggiunti (totale: ${prixList.length})`,
-                battocchio: `${battocchioNames.length} nomi aggiunti (totale: ${battocchioList.length})`
+                prix: `${prixNames.length} nomi aggiunti (totale: ${prixList.length})`
               });
               
               // Debug: mostra il contenuto delle liste
@@ -2788,29 +2724,8 @@ function openRefillSimple(){
             
             // Leggi Battocchio (riga 88, indice 87) con valori dalla riga 81 (indice 80)
             const battocchioNames = [];
-            
-            // Metodo alternativo: leggi direttamente dalle celle per gestire le formule
-            console.log('RESET REFILL: Leggendo Battocchio direttamente dalle celle...');
-            for (let col = 8; col < 100; col++) { // da colonna I (8) in poi
-              const colLetter = String.fromCharCode(65 + col); // A=65, B=66, etc.
-              const cellRef88 = `${colLetter}88`;
-              const cellRef81 = `${colLetter}81`;
-              
-              const cell88 = firstSheet[cellRef88];
-              const cell81 = firstSheet[cellRef81];
-              
-              if (cell88 && cell88.v && cell88.v.toString().trim() !== '') {
-                const name = cell88.v.toString().trim();
-                const value = cell81 && cell81.v ? cell81.v.toString() : '0';
-                const nameWithValue = `${name} (${value})`;
-                battocchioNames.push(nameWithValue);
-                console.log(`RESET REFILL: Battocchio da cella ${cellRef88}: "${name}" valore da ${cellRef81}: "${value}"`);
-              }
-            }
-            
-            // Fallback: usa il metodo JSON se il metodo diretto non trova nulla
-            if (battocchioNames.length === 0 && jsonData[87]) {
-              console.log('RESET REFILL: Fallback - Riga 88 da JSON:', jsonData[87]);
+            if (jsonData[87]) {
+              console.log('RESET REFILL: Riga 88 da JSON:', jsonData[87]);
               jsonData[87].forEach((cell, index) => {
                 if (cell && cell.toString().trim() !== '' && index >= 8) {
                   const name = cell.toString().trim();
@@ -2820,6 +2735,8 @@ function openRefillSimple(){
                   console.log(`RESET REFILL: Battocchio da JSON colonna ${index + 1}: "${name}" valore: "${value}"`);
                 }
               });
+            } else {
+              console.log('RESET REFILL: Riga 88 (indice 87) non trovata o vuota');
             }
             
             console.log('RESET REFILL: Battocchio nomi trovati:', battocchioNames.length);
@@ -4356,13 +4273,6 @@ function openAmazonPopup(){
     openCarrelloPopup();
   };
   
-  const aggiungiBtn = document.createElement('button');
-  aggiungiBtn.textContent = "Aggiungi";
-  aggiungiBtn.onclick = ()=> { 
-    vibrate(VIBRATION_PATTERNS.tap); 
-    openAggiungiPopup(amazonList, "AMAZON", openAmazonPopup);
-  };
-  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = ()=> { 
@@ -4371,7 +4281,6 @@ function openAmazonPopup(){
   };
   
   actionsDiv.appendChild(backBtn);
-  actionsDiv.appendChild(aggiungiBtn);
   actionsDiv.appendChild(closeBtn);
   
   showPopup();
@@ -4461,13 +4370,6 @@ function openPoggianaPopup(){
     openCarrelloPopup();
   };
   
-  const aggiungiBtn = document.createElement('button');
-  aggiungiBtn.textContent = "Aggiungi";
-  aggiungiBtn.onclick = ()=> { 
-    vibrate(VIBRATION_PATTERNS.tap); 
-    openAggiungiPopup(poggianaList, "POGGIANA", openPoggianaPopup);
-  };
-  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = ()=> { 
@@ -4476,7 +4378,6 @@ function openPoggianaPopup(){
   };
   
   actionsDiv.appendChild(backBtn);
-  actionsDiv.appendChild(aggiungiBtn);
   actionsDiv.appendChild(closeBtn);
   
   showPopup();
@@ -4566,13 +4467,6 @@ function openPrixPopup(){
     openCarrelloPopup();
   };
   
-  const aggiungiBtn = document.createElement('button');
-  aggiungiBtn.textContent = "Aggiungi";
-  aggiungiBtn.onclick = ()=> { 
-    vibrate(VIBRATION_PATTERNS.tap); 
-    openAggiungiPopup(prixList, "PRIX", openPrixPopup);
-  };
-  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = ()=> { 
@@ -4581,7 +4475,6 @@ function openPrixPopup(){
   };
   
   actionsDiv.appendChild(backBtn);
-  actionsDiv.appendChild(aggiungiBtn);
   actionsDiv.appendChild(closeBtn);
   
   showPopup();
@@ -4671,13 +4564,6 @@ function openBattocchioPopup(){
     openCarrelloPopup();
   };
   
-  const aggiungiBtn = document.createElement('button');
-  aggiungiBtn.textContent = "Aggiungi";
-  aggiungiBtn.onclick = ()=> { 
-    vibrate(VIBRATION_PATTERNS.tap); 
-    openAggiungiPopup(battocchioList, "BATTOCCHIO", openBattocchioPopup);
-  };
-  
   const closeBtn = document.createElement('button');
   closeBtn.textContent = "Chiudi";
   closeBtn.onclick = ()=> { 
@@ -4686,7 +4572,6 @@ function openBattocchioPopup(){
   };
   
   actionsDiv.appendChild(backBtn);
-  actionsDiv.appendChild(aggiungiBtn);
   actionsDiv.appendChild(closeBtn);
   
   showPopup();
@@ -5886,6 +5771,8 @@ function openCustomTablesPopup(){
       tableNames.push(newName);
       renderTables();
       saveData();
+      
+      // Riapri il popup dei tavoli personalizzati per mostrare il nuovo tavolo
       openCustomTablesPopup();
     }
   };
@@ -5934,11 +5821,17 @@ function openCustomTablesPopup(){
       let pressTimer;
       
       // Click normale = apri tavolo
-      btn.onclick = ()=> {
+      btn.onclick = (e)=> {
+        e.stopPropagation();
         const idx = tableNames.indexOf(tableName);
         if(idx !== -1){
+          vibrate(VIBRATION_PATTERNS.tap);
+          
+          // Chiudi completamente il popup e poi apri il tavolo dalla schermata principale
           closePopup();
-          openForTable(idx);
+          setTimeout(() => {
+            openForTable(idx);
+          }, 300);
         }
       };
       
@@ -6345,162 +6238,6 @@ function openAccontoPopup(){
   actionsDiv.appendChild(closeBtn);
   
   popupTitle.textContent = "Acconto";
-  showPopup();
-}
-
-/* Popup Aggiungi - per aggiungere prodotti alle liste carrello */
-function openAggiungiPopup(targetList, listName, returnFunction){
-  // Layout verticale - non serve nascondere colonna
-  if(categoriesDiv) categoriesDiv.style.display = 'none';
-  subcatsDiv.innerHTML = "";
-  tempoPad.classList.add('hidden');
-  orderList.innerHTML = "";
-  
-  // Salva il contesto corrente prima che venga modificato
-  const savedTarget = JSON.parse(JSON.stringify(currentTarget));
-  const items = getEditingItems();
-  const selectedItems = new Set();
-  
-  if(!items || items.length === 0){
-    const empty = document.createElement('div');
-    empty.textContent = "Nessun prodotto nell'ordine";
-    empty.style.textAlign = "center";
-    empty.style.padding = "20px";
-    orderList.appendChild(empty);
-  } else {
-    const title = document.createElement('div');
-    title.textContent = `Seleziona i prodotti da aggiungere alla lista ${listName}:`;
-    title.style.fontWeight = "700";
-    title.style.marginBottom = "10px";
-    title.style.fontSize = "16px";
-    orderList.appendChild(title);
-    
-    items.forEach((it, i)=>{
-      const row = document.createElement('div');
-      row.style.border = "2px solid #444";
-      row.style.borderRadius = "6px";
-      row.style.padding = "12px";
-      row.style.marginBottom = "8px";
-      row.style.cursor = "pointer";
-      row.style.display = "flex";
-      row.style.justifyContent = "space-between";
-      row.style.alignItems = "center";
-      row.style.transition = "all 0.2s";
-      
-      const cat = detectCategory(it.name);
-      if(cat === 'caffe') row.style.background = '#888';
-      else if(cat === 'spina') row.style.background = '#ff8800';
-      else if(cat === 'frigo') row.style.background = '#0099ff';
-      else if(cat === 'super') row.style.background = '#aaaa00';
-      else if(cat === 'snack') row.style.background = '#ff0000';
-      else if(cat === 'tempo') row.style.background = '#008800';
-      else if(cat === 'quote') row.style.background = '#0000ff';
-      else if(cat === 'cassa') row.style.background = '#000';
-      
-      const nameDiv = document.createElement('div');
-      nameDiv.textContent = `${it.qty} × ${it.name}`;
-      nameDiv.style.fontSize = "16px";
-      
-      const priceDiv = document.createElement('div');
-      const lineTotal = (it.qty * (it.price||0));
-      priceDiv.textContent = `€${lineTotal.toFixed(2)}`;
-      priceDiv.style.fontSize = "16px";
-      priceDiv.style.fontWeight = "700";
-      
-      row.appendChild(nameDiv);
-      row.appendChild(priceDiv);
-      
-      row.onclick = ()=> {
-        if(selectedItems.has(i)){
-          selectedItems.delete(i);
-          row.style.border = "2px solid #444";
-          row.style.opacity = "1";
-        } else {
-          selectedItems.add(i);
-          row.style.border = "2px solid #00ff00";
-          row.style.opacity = "0.8";
-        }
-      };
-      
-      orderList.appendChild(row);
-    });
-  }
-  
-  actionsDiv.innerHTML = "";
-  
-  const aggiungiBtn = document.createElement('button');
-  aggiungiBtn.textContent = "Conferma Aggiunta";
-  aggiungiBtn.style.background = "#00aa00";
-  aggiungiBtn.onclick = ()=> {
-    if(selectedItems.size === 0){
-      return;
-    }
-    
-    const selectedIndexes = Array.from(selectedItems).sort((a,b)=>b-a);
-    let totalAggiungi = 0;
-    
-    selectedIndexes.forEach(idx => {
-      const item = items[idx];
-      totalAggiungi += (item.price || 0) * (item.qty || 1);
-    });
-    
-    showConfirm(`Aggiungere ${selectedItems.size} prodotti alla lista ${listName}?\nTotale: €${totalAggiungi.toFixed(2)}`, ()=>{
-      selectedIndexes.forEach(idx => {
-        const item = items[idx];
-        
-        // Crea il formato per la lista carrello: "nome (prezzo)"
-        const itemName = `${item.name} (€${(item.price || 0).toFixed(2)})`;
-        
-        // Aggiungi alla lista appropriata
-        targetList.push({
-          name: itemName,
-          originalItem: JSON.parse(JSON.stringify(item))
-        });
-        
-        // Rimuovi dall'ordine corrente
-        items.splice(idx, 1);
-      });
-      
-      saveData();
-      
-      // Ripristina il target originale
-      currentTarget = savedTarget;
-      
-      if(items.length === 0 && savedTarget.type === 'saved'){
-        const idx = savedOrders.findIndex(s=>s.id === savedTarget.id);
-        if(idx !== -1) savedOrders.splice(idx,1);
-        closePopup();
-      } else {
-        // Torna al popup dell'ordine o alla lista carrello
-        if(returnFunction){
-          returnFunction();
-        } else if(savedTarget.type === 'table'){
-          openForTable(savedTarget.id);
-        } else if(savedTarget.type === 'saved'){
-          openForSaved(savedTarget.id);
-        }
-      }
-    });
-  };
-  
-  const closeBtn = document.createElement('button');
-  closeBtn.textContent = "Annulla";
-  closeBtn.onclick = ()=> {
-    // Ripristina il target originale e torna alla lista carrello
-    currentTarget = savedTarget;
-    if(returnFunction){
-      returnFunction();
-    } else if(savedTarget.type === 'table'){
-      openForTable(savedTarget.id);
-    } else if(savedTarget.type === 'saved'){
-      openForSaved(savedTarget.id);
-    }
-  };
-  
-  actionsDiv.appendChild(aggiungiBtn);
-  actionsDiv.appendChild(closeBtn);
-  
-  popupTitle.textContent = `Aggiungi a ${listName}`;
   showPopup();
 }
 
@@ -7359,25 +7096,6 @@ function openSettings(){
     {name: "📁 Gestisci Categorie", action: openCategorySettings},
     {name: "📂 Gestisci Sottocategorie", action: openSubcategorySettings},
     {name: "🏷️ Gestisci Modificatori", action: openModifierSettings},
-    {name: "🔄 Forza Sync Liste (Debug)", action: () => {
-      vibrate(VIBRATION_PATTERNS.tap);
-      forceSyncShoppingLists();
-      showAlert('Sincronizzazione liste forzata!');
-    }},
-    {name: "🔍 Debug Liste Correnti", action: () => {
-      vibrate(VIBRATION_PATTERNS.tap);
-      const debugInfo = `
-LISTE CORRENTI:
-Amazon: ${amazonList.length} elementi
-Poggiana: ${poggianaList.length} elementi  
-Prix: ${prixList.length} elementi
-Battocchio: ${battocchioList.length} elementi
-
-Firebase: ${firebaseEnabled ? 'Abilitato' : 'Disabilitato'}
-      `.trim();
-      showAlert(debugInfo);
-      console.log('🔍 DEBUG LISTE:', {amazonList, poggianaList, prixList, battocchioList});
-    }}
   ];
 
   menuOptions.forEach(option => {
@@ -8429,6 +8147,9 @@ function openSelectPaddingForAll(){
 function openCategorySettings(){
   orderList.innerHTML = "";
   
+  // Imposta il titolo del popup
+  popupTitle.textContent = "Gestisci Categorie e Prodotti";
+  
   const title = document.createElement('div');
   title.textContent = "Gestisci Categorie e Prodotti";
   title.style.fontWeight = "700";
@@ -8983,7 +8704,31 @@ function exportSingleHistoric(entry){
 
 /* helper detect category */
 function detectCategory(name){
-  const s = (name||"").toLowerCase();
+  if(!name) return null;
+  
+  // Prima controlla nel CATALOG per una corrispondenza esatta
+  for(const [catKey, products] of Object.entries(CATALOG)) {
+    if(products && Array.isArray(products)) {
+      const found = products.find(p => p.name === name);
+      if(found) {
+        // Mappa le chiavi del CATALOG ai nomi delle categorie
+        const categoryMap = {
+          'c1': 'caffe',
+          'c2': 'spina', 
+          'c3': 'frigo',
+          'c4': 'super',
+          'c5': 'snack',
+          'c6': 'tempo',
+          'c7': 'quote',
+          'c8': 'cassa'
+        };
+        return categoryMap[catKey] || null;
+      }
+    }
+  }
+  
+  // Fallback alla logica originale basata su parole chiave
+  const s = name.toLowerCase();
   if(s.includes("caff")) return "caffe";
   if(s.includes("pyraser")||s.includes("aria")||s.includes("guinness")||s.includes("spritz")) return "spina";
   // Controlla prima i cocktails con "lemon" (GIN LEMON, VODKA LEMON) prima di controllare LEMON SODA

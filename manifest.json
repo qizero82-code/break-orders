@@ -1,28 +1,57 @@
 {
+  "id": "/break-orders/",
   "name": "Break Orders",
   "short_name": "BreakOrders",
   "description": "Sistema di gestione ordini per Break Billiard Club",
-  "start_url": "./index.html",
-  "display": "standalone",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
-  "scope": "./",
   "prefer_related_applications": false,
   "categories": ["business", "productivity"],
   "lang": "it",
+  "dir": "ltr",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Nuovo Ordine",
+      "short_name": "Ordine",
+      "description": "Crea un nuovo ordine",
+      "url": "./",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
