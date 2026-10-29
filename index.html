@@ -1669,6 +1669,31 @@ function saveData(){
     // Forza sempre il salvataggio degli evasi, anche se vuoto
     firebaseData['evasiOrders'] = evasiOrders || [];
     console.log('SaveData - Salvando evasi con', (evasiOrders || []).length, 'elementi');
+    
+    // Dati completi da salvare in localStorage (ordini + impostazioni)
+    const localData = {
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
+      amazonList, poggianaList, prixList, battocchioList,
+      currentBackground, currentFont, currentFontSize, fontSettings, 
+      modifiersList, subcategories, CATALOG
+    };
+    
+    // Salva sempre in localStorage come backup
+    localStorage.setItem('breakOrdersState', JSON.stringify(localData));
+    
+    // Crea backup automatico ad ogni salvataggio
+    createBackup(localData);
+    
+    // Se Firebase è abilitato, sincronizza SOLO gli ordini
+    if (firebaseEnabled && database && !isUpdatingFromFirebase) {
+      // update() evita di sovrascrivere le chiavi non incluse nel payload
+      database.ref('breakOrders').update(firebaseData).catch(err => {
+        console.error("❌ Errore salvataggio Firebase:", err);
+      });
+    }
+  }catch(e){ 
+    console.error("Errore saveData:", e);
+  }
 }
 
 /* ========== SISTEMA BACKUP AUTOMATICO ========== */
