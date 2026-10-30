@@ -656,6 +656,8 @@ let consumoCounters = {}; // {productName: number} - contatori consumo da reset 
 let consumoList = {}; // {productName: {quantity: number, value: number}} - lista prodotti consumo (come refill ma persistente)
 let editableValues = {}; // {productName: number} - valori editabili per il calcolo del prodotto
 let storageValues = {}; // {productName: number} - valori per le righe storage
+let backupList = []; // [{id, timestamp, data}] - lista backup automatici per ripristino
+const MAX_BACKUPS = 20; // Numero massimo di backup da mantenere
 
 // Liste per i popup carrello (da celle Excel)
 let amazonList = []; // Lista prodotti Amazon da cella I84, CB84
@@ -1728,9 +1730,229 @@ function loadData(){
     if(!raw) return;
     const parsed = JSON.parse(raw);
     applyParsedData(parsed);
+    
+    // Carica anche la lista backup
+    const backupRaw = localStorage.getItem('breakOrdersBackups');
+    if(backupRaw){
+      backupList = JSON.parse(backupRaw);
+      console.log('📦 Caricati', backupList.length, 'backup automatici');
+    }
   }catch(e){ 
     console.error("Errore loadData:", e);
   }
+}
+
+/* ========== SISTEMA BACKUP AUTOMATICO ========== */
+function createBackup(data) {
+  try {
+    const backupId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const timestamp = new Date().toISOString();
+    const dateLabel = new Date().toLocaleString('it-IT');
+    
+    const backup = {
+      id: backupId,
+      timestamp: timestamp,
+      dateLabel: dateLabel,
+      data: JSON.parse(JSON.stringify(data))
+    };
+    
+    backupList.unshift(backup);
+    
+    if (backupList.length > MAX_BACKUPS) {
+      backupList = backupList.slice(0, MAX_BACKUPS);
+    }
+    
+    localStorage.setItem('breakOrdersBackups', JSON.stringify(backupList));
+    
+    console.log('💾 Backup creato:', dateLabel, '(Totale:', backupList.length, ')');
+  } catch (e) {
+    console.error('❌ Errore creazione backup:', e);
+  }
+}
+
+function restoreBackup(backupId) {
+  try {
+    const backup = backupList.find(b => b.id === backupId);
+    if (!backup) {
+      alert('Backup non trovato!');
+      return;
+    }
+    
+    showConfirm(
+      `Ripristinare il backup del ${backup.dateLabel}?\n\n⚠️ ATTENZIONE: Questo sovrascriverà i dati degli ordini ma manterrà le impostazioni visive!`,
+      () => {
+        vibrate(VIBRATION_PATTERNS.success);
+        
+        // Salva le impostazioni attuali prima del ripristino
+        const savedBackground = currentBackground;
+        const savedFont = currentFont;
+        const savedFontSize = currentFontSize;
+        const savedFontSettings = JSON.parse(JSON.stringify(fontSettings));
+        
+        // Ripristina i dati del backup
+        applyParsedData(backup.data, false);
+        
+        // Ripristina le impostazioni visive
+        currentBackground = savedBackground;
+        currentFont = savedFont;
+        currentFontSize = savedFontSize;
+        fontSettings = savedFontSettings;
+        
+        // Applica le impostazioni
+        applyBackground();
+        applyFont();
+        
+        saveData();
+        renderTables();
+        renderSavedButtons();
+        alert('✅ Backup ripristinato con successo! (Impostazioni visive mantenute)');
+        closePopup();
+      },
+      'Conferma Ripristino'
+    );
+  } catch (e) {
+    console.error('❌ Errore ripristino backup:', e);
+    alert('Errore durante il ripristino del backup');
+  }
+}
+
+function deleteBackup(backupId) {
+  try {
+    showConfirm('Eliminare questo backup?', () => {
+      const idx = backupList.findIndex(b => b.id === backupId);
+      if (idx !== -1) {
+        backupList.splice(idx, 1);
+        localStorage.setItem('breakOrdersBackups', JSON.stringify(backupList));
+        openBackupManager();
+      }
+    }, 'Elimina Backup');
+  } catch (e) {
+    console.error('❌ Errore eliminazione backup:', e);
+  }
+}
+
+function downloadBackup(backupId) {
+  try {
+    const backup = backupList.find(b => b.id === backupId);
+    if (!backup) return;
+    
+    const dataStr = JSON.stringify(backup.data, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_${backup.dateLabel.replace(/[/:]/g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('📥 Backup scaricato:', backup.dateLabel);
+  } catch (e) {
+    console.error('❌ Errore download backup:', e);
+  }
+}
+
+function openBackupManager() {
+  orderList.innerHTML = "";
+  
+  const title = document.createElement('div');
+  title.textContent = "🗄️ GESTIONE BACKUP";
+  title.style.fontWeight = "700";
+  title.style.fontSize = "18px";
+  title.style.marginBottom = "15px";
+  title.style.textAlign = "center";
+  orderList.appendChild(title);
+  
+  if (backupList.length === 0) {
+    const empty = document.createElement('div');
+    empty.textContent = "Nessun backup disponibile";
+    empty.style.textAlign = "center";
+    empty.style.padding = "20px";
+    empty.style.color = "#888";
+    orderList.appendChild(empty);
+  } else {
+    backupList.forEach((backup) => {
+      const box = document.createElement('div');
+      box.style.border = "2px solid #444";
+      box.style.borderRadius = "8px";
+      box.style.padding = "12px";
+      box.style.marginBottom = "10px";
+      box.style.background = "#222";
+      
+      const header = document.createElement('div');
+      header.style.display = "flex";
+      header.style.justifyContent = "space-between";
+      header.style.alignItems = "center";
+      header.style.marginBottom = "8px";
+      
+      const dateSpan = document.createElement('div');
+      dateSpan.textContent = `📅 ${backup.dateLabel}`;
+      dateSpan.style.fontSize = "16px";
+      dateSpan.style.fontWeight = "700";
+      dateSpan.style.color = "#00ff00";
+      
+      header.appendChild(dateSpan);
+      box.appendChild(header);
+      
+      const actions = document.createElement('div');
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+      actions.style.marginTop = "8px";
+      
+      const restoreBtn = document.createElement('button');
+      restoreBtn.textContent = "Ripristina";
+      restoreBtn.style.flex = "1";
+      restoreBtn.style.background = "#00aa00";
+      restoreBtn.onclick = () => restoreBackup(backup.id);
+      
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = "⬇️ Scarica";
+      downloadBtn.style.flex = "1";
+      downloadBtn.style.background = "#0099ff";
+      downloadBtn.onclick = () => downloadBackup(backup.id);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = "🗑️ Elimina";
+      deleteBtn.style.flex = "1";
+      deleteBtn.style.background = "#aa0000";
+      deleteBtn.onclick = () => deleteBackup(backup.id);
+      
+      actions.appendChild(restoreBtn);
+      actions.appendChild(downloadBtn);
+      actions.appendChild(deleteBtn);
+      box.appendChild(actions);
+      
+      orderList.appendChild(box);
+    });
+  }
+  
+  const info = document.createElement('div');
+  info.textContent = `📦 Backup disponibili: ${backupList.length}/${MAX_BACKUPS}`;
+  info.style.textAlign = "center";
+  info.style.fontSize = "14px";
+  info.style.color = "#888";
+  info.style.marginTop = "15px";
+  info.style.padding = "10px";
+  info.style.background = "#1a1a1a";
+  info.style.borderRadius = "8px";
+  orderList.appendChild(info);
+  
+  actionsDiv.innerHTML = "";
+  
+  const backBtn = document.createElement('button');
+  backBtn.textContent = "← Indietro";
+  backBtn.onclick = openSettings;
+  actionsDiv.appendChild(backBtn);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = "Chiudi";
+  closeBtn.onclick = closePopup;
+  actionsDiv.appendChild(closeBtn);
+  
+  popupTitle.textContent = "Gestione Backup";
+  showPopup();
 }
 
 // Funzione helper per applicare i dati parsati
@@ -6386,6 +6608,12 @@ function addCatalogProduct(name, price){
   
   renderOrderList();
   saveData();
+  createBackup({
+    tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
+    amazonList, poggianaList, prixList, battocchioList,
+    currentBackground, currentFont, currentFontSize, fontSettings, 
+    modifiersList, subcategories, CATALOG
+  });
   renderSavedButtons();
 }
 
@@ -6458,10 +6686,22 @@ function deleteOrderItem(item) {
       renderOrderList();
     }
     saveData();
+    createBackup({
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
+      amazonList, poggianaList, prixList, battocchioList,
+      currentBackground, currentFont, currentFontSize, fontSettings, 
+      modifiersList, subcategories, CATALOG
+    });
   } else {
     items.splice(itemIndex,1);
     renderOrderList();
     saveData();
+    createBackup({
+      tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
+      amazonList, poggianaList, prixList, battocchioList,
+      currentBackground, currentFont, currentFontSize, fontSettings, 
+      modifiersList, subcategories, CATALOG
+    });
   }
 }
 
@@ -6871,6 +7111,12 @@ function openTotals(){
       });
       Object.keys(totals).forEach(k=>totals[k]=0);
       saveData();
+      createBackup({
+        tableOrders, savedOrders, totals, tableNames, storico, evasiOrders, refillList, refillCounters, maintenanceCounters, consumoCounters, consumoList, editableValues, storageValues,
+        amazonList, poggianaList, prixList, battocchioList,
+        currentBackground, currentFont, currentFontSize, fontSettings, 
+        modifiersList, subcategories, CATALOG
+      });
       openTotals();
     }, 'Reset Totali');
   };
@@ -7096,6 +7342,7 @@ function openSettings(){
     {name: "📁 Gestisci Categorie", action: openCategorySettings},
     {name: "📂 Gestisci Sottocategorie", action: openSubcategorySettings},
     {name: "🏷️ Gestisci Modificatori", action: openModifierSettings},
+    {name: "🗄️ Gestione Backup", action: openBackupManager},
   ];
 
   menuOptions.forEach(option => {
